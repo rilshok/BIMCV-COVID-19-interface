@@ -37,3 +37,15 @@ class Labels:
         state.pop("subject_id")
         state.pop("session_id")
         return state
+
+@dataclass
+class Test:
+    subject_id: str
+    date: str
+    test: str
+    result: str
+
+    def to_dict(self):
+        state = self.__dict__.copy()
+        state.pop("subject_id")
+        return state
