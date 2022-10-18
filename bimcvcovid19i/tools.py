@@ -47,3 +47,7 @@ def derepr_medical_evaluation_text(text: str) -> str:
     for char in ";,.!?":
         pure_text = pure_text.replace(f" {char}", char)
     return pure_text
+
+
+def skip_empty(sequence) -> tp.Sequence:
+    return type(sequence)(item for item in sequence if item == item and item)
