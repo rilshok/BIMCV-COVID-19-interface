@@ -9,8 +9,7 @@ from tqdm import tqdm  # type: ignore
 from webdav3.client import Client  # type: ignore
 from webdav3.exceptions import WebDavException  # type: ignore
 
-
-LikePath = tp.Union[str, Path]
+from .typing import LikePath
 
 
 def get_sha1(path: LikePath) -> str:
