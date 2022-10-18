@@ -1,1 +1,4 @@
 webdavclient3
+SimpleITK
+numpy
+nibabel

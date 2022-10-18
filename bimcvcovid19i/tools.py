@@ -1,6 +1,12 @@
 import itertools as it
 import typing as tp
 
+import nibabel as nib
+import numpy as np
+import SimpleITK as sitk
+
+from .typing import LikePath
+
 
 def resolve_escape_char(string: str) -> str:
     string = string.replace("\\n", "\n")
@@ -58,3 +64,13 @@ def derepr_CUIS(string):
         string = "[]"
     string = string.replace("[", "").replace("]", "")
     return skip_empty(string.split(","))
+
+
+def nifty2numpy(nifti_path: LikePath) -> np.ndarray:
+    nii = nib.load(nifti_path)
+    return np.array(nii.dataobj)
+
+
+def png2numpy(png_path: LikePath) -> np.ndarray:
+    img = sitk.ReadImage(png_path)
+    return sitk.GetArrayFromImage(img)
