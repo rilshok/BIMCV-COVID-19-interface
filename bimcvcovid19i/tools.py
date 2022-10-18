@@ -1,7 +1,9 @@
 """ """
 
 import contextlib
+import gzip
 import itertools as it
+import json
 import typing as tp
 
 import nibabel as nib
@@ -85,9 +87,25 @@ def spacing_from_nifty(nifti_path: LikePath):
     except Exception:
         return None
 
+
 def down_type(data: np.ndarray):
     for dtype in [np.int8, np.uint8, np.int16, np.uint16, np.float16]:
         if np.all(data == data.astype(dtype)):
             data = data.astype(dtype)
             break
     return data
+
+
+def save_json_gz(data, path, *, compression=1):
+    dumps = json.dumps(data).encode()
+    gzdumps = gzip.compress(dumps, compresslevel=compression, mtime=0)
+    with open(path, "wb") as file:
+        file.write(gzdumps)
+
+
+def load_json_gz(path):
+    with open(path, "rb") as f:
+        gzdumps = f.read()
+
+    dumps = gzip.decompress(gzdumps)
+    return json.loads(dumps.decode())
