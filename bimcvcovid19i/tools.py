@@ -51,3 +51,10 @@ def derepr_medical_evaluation_text(text: str) -> str:
 
 def skip_empty(sequence) -> tp.Sequence:
     return type(sequence)(item for item in sequence if item == item and item)
+
+
+def derepr_CUIS(string):
+    if string != string:
+        string = "[]"
+    string = string.replace("[", "").replace("]", "")
+    return skip_empty(string.split(","))
