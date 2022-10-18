@@ -15,9 +15,13 @@ LikePath = tp.Union[str, Path]
 
 def get_sha1(path: LikePath) -> str:
     """SHA1 checksum calculation"""
+    hash_ = hashlib.sha1(b"")
     with open(path, "rb") as file:
-        data = file.read()
-    return hashlib.sha1(data).hexdigest()
+        data = b" "
+        while data:
+            data = file.read(2**20)
+            hash_.update(d)
+    return hash_.hexdigest()
 
 
 def read_checksums(path: LikePath, sep=None) -> tp.Dict[str, str]:
@@ -114,10 +118,11 @@ def webdav_download_all(
     for name, value in sha1sums.items():
         file_path = download_path / name
         if file_path.exists():
-            if get_sha1(file_path) == value:
-                pass
-            else:
-                pass
+            pass
+            # if get_sha1(file_path) == value:
+            #     pass
+            # else:
+            #     pass
         else:
             warnings.warn(
                 f"file '{name}' is listed in sha1sums.txt but has not been downloaded"
