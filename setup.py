@@ -13,7 +13,7 @@ AUTHOR_EMAIL = "rilshok@pm.me"
 URL = f"https://github.com/rilshok/BIMCV-COVID-19-interface"
 CLASSIFIERS = [
     "Programming Language :: Python :: 3.9",
-    "License :: OSI Approved :: Open Coronavirus",
+    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Development Status :: 1 - Planning",
 ]
