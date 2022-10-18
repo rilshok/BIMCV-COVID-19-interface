@@ -20,7 +20,7 @@ def get_sha1(path: LikePath) -> str:
         data = b" "
         while data:
             data = file.read(2**20)
-            hash_.update(d)
+            hash_.update(data)
     return hash_.hexdigest()
 
 
