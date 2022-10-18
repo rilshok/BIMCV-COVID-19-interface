@@ -74,3 +74,10 @@ def nifty2numpy(nifti_path: LikePath) -> np.ndarray:
 def png2numpy(png_path: LikePath) -> np.ndarray:
     img = sitk.ReadImage(png_path)
     return sitk.GetArrayFromImage(img)
+
+
+def spacing_from_nifty(nifti_path: LikePath):
+    try:
+        return nib.load(nifti_path).header.get_zooms()
+    except Exception:
+        return None
