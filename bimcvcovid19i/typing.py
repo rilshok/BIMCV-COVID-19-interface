@@ -5,6 +5,25 @@ from dataclasses import dataclass
 LikePath = tp.Union[str, Path]
 
 
+class DatasetRoot:
+    def __init__(self, root: LikePath):
+        self._root = Path(root).absolute()
+        self._original = self._root / "original"
+        self._prepared = self._root / "bimcvcovid19i"
+
+    @property
+    def root(self) -> Path:
+        return self._root
+
+    @property
+    def original(self) -> Path:
+        return self._original
+
+    @property
+    def prepared(self) -> Path:
+        return self._prepared
+
+
 @dataclass
 class Subject:
     subject_id: str
