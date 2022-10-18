@@ -107,3 +107,26 @@ def load_json_gz(path):
 
     dumps = gzip.decompress(gzdumps)
     return json.loads(dumps.decode())
+
+
+def spacing_from_tags(tags: tp.Dict):
+    if tags is None:
+        return None
+
+    if not isinstance(tags, dict):
+        return None
+
+    if "PixelSpacing" not in tags:
+        return None
+
+    spacing = tags["PixelSpacing"]
+
+    if "Modality" not in tags:
+        return None
+    if tags["Modality"].lower() in ["cr", "dx"]:
+        return spacing
+
+    if tags["Modality"].lower() == "ct":
+        raise NotImplementedError
+        
+    raise NotImplementedError
