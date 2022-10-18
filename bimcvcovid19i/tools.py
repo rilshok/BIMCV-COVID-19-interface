@@ -1,3 +1,6 @@
+""" """
+
+import contextlib
 import itertools as it
 import typing as tp
 
@@ -81,3 +84,10 @@ def spacing_from_nifty(nifti_path: LikePath):
         return nib.load(nifti_path).header.get_zooms()
     except Exception:
         return None
+
+def down_type(data: np.ndarray):
+    for dtype in [np.int8, np.uint8, np.int16, np.uint16, np.float16]:
+        if np.all(data == data.astype(dtype)):
+            data = data.astype(dtype)
+            break
+    return data
