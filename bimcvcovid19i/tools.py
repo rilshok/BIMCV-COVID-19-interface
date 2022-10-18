@@ -82,10 +82,8 @@ def png2numpy(png_path: LikePath) -> np.ndarray:
 
 
 def spacing_from_nifty(nifti_path: LikePath):
-    try:
+    with contextlib.suppress(Exception):
         return nib.load(nifti_path).header.get_zooms()
-    except Exception:
-        return None
 
 
 def down_type(data: np.ndarray):
