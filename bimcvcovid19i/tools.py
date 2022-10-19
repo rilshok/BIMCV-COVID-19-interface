@@ -1,12 +1,10 @@
 """ """
 
 import contextlib
-import gzip
 import itertools as it
-import json
 import typing as tp
 
-import nibabel as nib
+import nibabel as nib  # type: ignore
 import numpy as np
 import SimpleITK as sitk
 
@@ -94,21 +92,6 @@ def down_type(data: np.ndarray):
     return data
 
 
-def save_json_gz(data, path, *, compression=1):
-    dumps = json.dumps(data).encode()
-    gzdumps = gzip.compress(dumps, compresslevel=compression, mtime=0)
-    with open(path, "wb") as file:
-        file.write(gzdumps)
-
-
-def load_json_gz(path):
-    with open(path, "rb") as f:
-        gzdumps = f.read()
-
-    dumps = gzip.decompress(gzdumps)
-    return json.loads(dumps.decode())
-
-
 def spacing_from_tags(tags: tp.Dict):
     if tags is None:
         return None
@@ -128,5 +111,5 @@ def spacing_from_tags(tags: tp.Dict):
 
     if tags["Modality"].lower() == "ct":
         raise NotImplementedError
-        
+
     raise NotImplementedError
