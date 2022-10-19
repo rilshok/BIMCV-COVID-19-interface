@@ -77,7 +77,7 @@ def webdav_download_all(
     webdav_password: str,
 ):
     """Download all files via WEBDAV protocol"""
-    download_path = Path(root).absolute() / "original"
+    download_path = Path(root).absolute()
 
     download_path.parent.mkdir(exist_ok=True, parents=False)
     download_path.mkdir(exist_ok=True, parents=False)
