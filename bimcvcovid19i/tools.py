@@ -1,14 +1,54 @@
 """ """
 
+__all__ = [
+    "save_json_gz",
+    "load_json_gz",
+    "resolve_escape_char",
+    "remove_double_space",
+    "derepr_list",
+    "derepr_medical_evaluation_text",
+    "skip_empty",
+    "derepr_CUIS",
+    "nifty2numpy",
+    "nifty2numpy",
+    "png2numpy",
+    "spacing_from_nifty",
+    "down_type",
+    "spacing_from_tags",
+    "parse_dicom_tags",
+    "derepr_strings_list",
+]
+
 import contextlib
 import itertools as it
 import typing as tp
 
 import nibabel as nib  # type: ignore
 import numpy as np
+import pydicom
 import SimpleITK as sitk
 
+from .typing import LikePath, Spacing
+import json
+import gzip
+
+import typing as tp
 from .typing import LikePath
+
+
+def save_json_gz(data: tp.Dict, path: LikePath, *, compression: int = 1):
+    dumps = json.dumps(data).encode()
+    gzdumps = gzip.compress(dumps, compresslevel=compression, mtime=0)
+    with open(path, "wb") as file:
+        file.write(gzdumps)
+
+
+def load_json_gz(path: LikePath) -> tp.Dict:
+    with open(path, "rb") as f:
+        gzdumps = f.read()
+
+    dumps = gzip.decompress(gzdumps)
+    return json.loads(dumps.decode())
 
 
 def resolve_escape_char(string: str) -> str:
@@ -79,11 +119,6 @@ def png2numpy(png_path: LikePath) -> np.ndarray:
     return sitk.GetArrayFromImage(img)
 
 
-def spacing_from_nifty(nifti_path: LikePath):
-    with contextlib.suppress(Exception):
-        return nib.load(nifti_path).header.get_zooms()
-
-
 def down_type(data: np.ndarray):
     for dtype in [np.int8, np.uint8, np.int16, np.uint16, np.float16]:
         if np.all(data == data.astype(dtype)):
@@ -92,7 +127,13 @@ def down_type(data: np.ndarray):
     return data
 
 
-def spacing_from_tags(tags: tp.Dict):
+def spacing_from_nifty(nifti_path: LikePath) -> tp.Optional[Spacing]:
+    with contextlib.suppress(Exception):
+        return nib.load(nifti_path).header.get_zooms()
+    return None
+
+
+def spacing_from_tags(tags: tp.Optional[dict]) -> tp.Optional[Spacing]:
     if tags is None:
         return None
 
@@ -113,3 +154,40 @@ def spacing_from_tags(tags: tp.Dict):
         raise NotImplementedError
 
     raise NotImplementedError
+
+
+def parse_dicom_tags(tags: tp.Dict[str, tp.Any]) -> tp.Optional[tp.Union[dict, list]]:
+    if not isinstance(tags, dict):
+        return tags
+    if len(tags) == 1:
+        if "vr" in tags:
+            return None
+        return parse_dicom_tags(list(tags.values())[0])
+
+    if set(tags.keys()) == {"Value", "vr"}:
+        value = tags["Value"]
+        # vr = tags["vr"]
+        assert isinstance(value, list)
+        result = [parse_dicom_tags(v) for v in value]
+        if not result:
+            return None
+        if len(result) == 1:
+            return result[0]
+        return result
+    result_: tp.Dict[str, tp.Optional[tp.Union[dict, list]]] = {}
+    for tag, value in tags.items():
+        try:
+            keyword = pydicom.datadict.keyword_for_tag(tag)
+        except ValueError:
+            keyword = str(tag)
+        assert isinstance(result_, dict)
+        result_[keyword] = parse_dicom_tags(value)
+    return result_
+
+
+def derepr_strings_list(string):
+    strings_list = derepr_list(string if string == string else "[]")
+    without_double_spaces = list(map(remove_double_space, strings_list))
+    pure_strings = skip_empty(without_double_spaces)
+    pure_strings = list(string for string in pure_strings if string != "[]")
+    return pure_strings
