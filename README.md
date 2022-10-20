@@ -3,6 +3,12 @@ This repository provides a python interface for working with [BIMCV COVID 19 dat
 
 Before use, please read the [license agreement](https://github.com/BIMCV-CSUSP/BIMCV-COVID-19) for the use of the BIMCV-COVID19 Dataset.
 
+## Installation
+
+```bash
+pip install bimcvcovid19i
+```
+
 ## System requirements
 
 |Dataset               |Original|Prepered|
