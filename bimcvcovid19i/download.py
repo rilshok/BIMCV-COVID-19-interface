@@ -96,7 +96,7 @@ def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
     )
 
 
-def bimcv_covid19_read_sessions(path: LikePath) -> tp.List[Session]:
+def bimcv_covid19_sessions(path: LikePath) -> tp.List[Session]:
     """read sessions from *sessions_tsv.tar.gz file"""
     path = Path(path)
     sessions = []
@@ -141,15 +141,15 @@ def bimcv_covid19_read_sessions(path: LikePath) -> tp.List[Session]:
     return sessions
 
 
-def bimcv_covid19_positive_read_sessions(root: LikePath) -> tp.List[Session]:
+def bimcv_covid19_positive_sessions(root: LikePath) -> tp.List[Session]:
     path = Path(root) / "covid19_posi_sessions_tsv.tar.gz"
-    return bimcv_covid19_read_sessions(path)
+    return bimcv_covid19_sessions(path)
 
 
-def bimcv_covid19_negative_read_sessions(root: LikePath) -> tp.List[Session]:
+def bimcv_covid19_negative_sessions(root: LikePath) -> tp.List[Session]:
     "processing covid19_neg_sessions_tsv.tar.gz"
     path = Path(root) / "covid19_neg_sessions_tsv.tar.gz"
-    return bimcv_covid19_read_sessions(path)
+    return bimcv_covid19_sessions(path)
 
 
 def iterate_sessions_bimcv_covid19_positive(root: LikePath) -> tp.Iterator[Path]:
@@ -325,7 +325,7 @@ def extract_bimcv_covid19_positive(root: LikePath):
     subjects = bimcv_covid19_positive_subjects(dsroot.original)
 
     logging.info("Extracting information about sessions")
-    sessions = bimcv_covid19_positive_read_sessions(dsroot.original)
+    sessions = bimcv_covid19_positive_sessions(dsroot.original)
 
     assert set(map(op.attrgetter("uid"), subjects)) == set(
         map(op.attrgetter("subject_id"), sessions)
@@ -399,4 +399,4 @@ def extract_bimcv_covid19_negative(root: LikePath):
     subjects = bimcv_covid19_negative_subjects(dsroot.original)
 
     logging.info("Extracting information about sessions")
-    sessions = bimcv_covid19_negative_read_sessions(dsroot.original)
+    sessions = bimcv_covid19_negative_sessions(dsroot.original)
