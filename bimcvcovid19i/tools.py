@@ -20,7 +20,9 @@ __all__ = [
 ]
 
 import contextlib
+import gzip
 import itertools as it
+import json
 import typing as tp
 
 import nibabel as nib  # type: ignore
@@ -29,11 +31,6 @@ import pydicom
 import SimpleITK as sitk
 
 from .typing import LikePath, Spacing
-import json
-import gzip
-
-import typing as tp
-from .typing import LikePath
 
 
 def save_json_gz(data: tp.Dict, path: LikePath, *, compression: int = 1):
@@ -98,11 +95,11 @@ def derepr_medical_evaluation_text(text: str) -> str:
     return pure_text
 
 
-def skip_empty(sequence) -> tp.Sequence:
-    return type(sequence)(item for item in sequence if item == item and item)
+def skip_empty(sequence) -> tp.List:
+    return list(item for item in sequence if item == item and item)
 
 
-def derepr_CUIS(string):
+def derepr_CUIS(string) -> tp.List[str]:
     if string != string:
         string = "[]"
     string = string.replace("[", "").replace("]", "")

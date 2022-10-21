@@ -45,8 +45,9 @@ def download_bimcv_covid19_negative(root: LikePath):
 def subjects_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
     path = Path(root) / "covid19_posi_subjects.tar.gz"
     with tarfile.open(path) as file:
-        participants = file.extractfile("covid19_posi/participants.tsv")
-        return pd.read_csv(participants, sep="\t")
+        member = file.extractfile("covid19_posi/participants.tsv")
+        assert member is not None
+        return pd.read_csv(member, sep="\t")
 
 
 def subjects_bimcv_covid19_positive(root: LikePath) -> tp.List[Subject]:
@@ -99,6 +100,7 @@ def read_sessions_bimcv_covid19_positive(root_bimcv_covid19) -> tp.List[Session]
         assert subject_id.startswith("sub-")
 
         sesions_file = all_sessions_file.extractfile(sesions_file_member)
+        assert sesions_file is not None
         sesions_dataframe = pd.read_csv(sesions_file, sep="\t")
 
         for sesion_row in sesions_dataframe.itertuples():
@@ -133,7 +135,7 @@ def read_sessions_bimcv_covid19_positive(root_bimcv_covid19) -> tp.List[Session]
     return sessions
 
 
-def iterate_sessions_bimcv_covid19_positive(root:LikePath) -> tp.Iterator[Path]:
+def iterate_sessions_bimcv_covid19_positive(root: LikePath) -> tp.Iterator[Path]:
     root = Path(root)
     part_paths = sorted(list(root.glob("*part*.tar.gz")))
     with TemporaryDirectory() as temp_root:
@@ -286,6 +288,7 @@ def tests_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
     subpath = "covid19_posi/derivatives/EHR/sil_reg_covid_posi.tsv"
     with tarfile.open(path) as file_head:
         member = file_head.extractfile(subpath)
+        assert member is not None
         return pd.read_csv(member, sep="\t")
 
 
@@ -299,6 +302,7 @@ def labels_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
     subpath = "covid19_posi/derivatives/labels/labels_covid_posi.tsv"
     with tarfile.open(path) as file:
         member = file.extractfile(subpath)
+        assert member is not None
         return pd.read_csv(member, sep="\t")
 
 
@@ -310,8 +314,6 @@ def labels_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, Labels]:
 def extract_bimcv_covid19_positive(root: LikePath):
     dsroot = BIMCVCOVID19Root(root)
     assert dsroot.original.exists()
-    # TODO: check sums
-    # contains empty objects
     logging.info("Source directory: %s", str(dsroot.original))
     logging.info("Destination directory: %s", str(dsroot.prepared))
     logging.info("Extracting information about subjects")
@@ -372,11 +374,18 @@ def extract_bimcv_covid19_positive(root: LikePath):
         subject_s_series_ids[session.subject_id].update(session.series_ids)
         subjects_s_sessions[session.subject_id].add(session.uid)
 
-
     for subject_id, series_ids in tqdm(subject_s_series_ids.items()):
         assert series_ids
         subject = subjects_map[subject_id]
-        subject.series_ids = series_ids
+        subject.series_ids = list(series_ids)
         subject.sessions_ids = list(subjects_s_sessions[subject_id])
         subject.tests = tests.get(subject_id)
         subject.save(dsroot.prepared_subjects / subject_id)
+
+
+def extract_bimcv_covid19_negative(root: LikePath):
+    dsroot = BIMCVCOVID19Root(root)
+    assert dsroot.original.exists()
+    logging.info("Source directory: %s", str(dsroot.original))
+    logging.info("Destination directory: %s", str(dsroot.prepared))
+    ...
