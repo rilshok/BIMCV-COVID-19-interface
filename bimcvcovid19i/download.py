@@ -95,11 +95,11 @@ def subjects_bimcv_covid19_negative(root: LikePath) -> tp.List[Subject]:
     return bimcv_covid19_extract_subjects(dataframe)
 
 
-def read_sessions_bimcv_covid19_positive(root_bimcv_covid19) -> tp.List[Session]:
-    root = Path(root_bimcv_covid19)
+def bimcv_covid19_read_sessions(path: LikePath) -> tp.List[Session]:
+    """read sessions from *sessions_tsv.tar.gz file"""
+    path = Path(path)
     sessions = []
-
-    all_sessions_file = tarfile.open(root / "covid19_posi_sessions_tsv.tar.gz")
+    all_sessions_file = tarfile.open(path)
     for sesions_file_member in all_sessions_file.getmembers():
         subject_id = sesions_file_member.name.split("/")[1]
         assert subject_id.startswith("sub-")
@@ -138,6 +138,17 @@ def read_sessions_bimcv_covid19_positive(root_bimcv_covid19) -> tp.List[Session]
             sessions.append(session)
     all_sessions_file.close()
     return sessions
+
+
+def bimcv_covid19_positive_read_sessions(root: LikePath) -> tp.List[Session]:
+    path = Path(root) / "covid19_posi_sessions_tsv.tar.gz"
+    return bimcv_covid19_read_sessions(path)
+
+
+def bimcv_covid19_negative_read_sessions(root: LikePath) -> tp.List[Session]:
+    "processing covid19_neg_sessions_tsv.tar.gz"
+    path = Path(root) / "covid19_neg_sessions_tsv.tar.gz"
+    return bimcv_covid19_read_sessions(path)
 
 
 def iterate_sessions_bimcv_covid19_positive(root: LikePath) -> tp.Iterator[Path]:
@@ -313,7 +324,7 @@ def extract_bimcv_covid19_positive(root: LikePath):
     subjects = subjects_bimcv_covid19_positive(dsroot.original)
 
     logging.info("Extracting information about sessions")
-    sessions = read_sessions_bimcv_covid19_positive(dsroot.original)
+    sessions = bimcv_covid19_positive_read_sessions(dsroot.original)
 
     assert set(map(op.attrgetter("uid"), subjects)) == set(
         map(op.attrgetter("subject_id"), sessions)
@@ -384,4 +395,7 @@ def extract_bimcv_covid19_negative(root: LikePath):
     logging.info("Destination directory: %s", str(dsroot.prepared))
 
     logging.info("Extracting information about subjects")
-    subjects = subjects_bimcv_covid19_positive(dsroot.original)
+    subjects = subjects_bimcv_covid19_negative(dsroot.original)
+
+    logging.info("Extracting information about sessions")
+    sessions = bimcv_covid19_negative_read_sessions(dsroot.original)
