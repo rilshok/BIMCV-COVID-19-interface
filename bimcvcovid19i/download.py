@@ -42,7 +42,10 @@ def download_bimcv_covid19_negative(root: LikePath):
     )
 
 
-def bimcv_covid19_extract_subjects(dataframe: pd.DataFrame) -> tp.List[Subject]:
+def bimcv_covid19_subjects(path: LikePath, subpath: LikePath) -> tp.List[Subject]:
+    with tools.open_from_tar(path, subpath) as file:
+        dataframe = pd.read_csv(file, sep="\t")
+
     subjects = []
     for row in dataframe.itertuples():
         if not row.participant.startswith("sub-"):
@@ -79,20 +82,18 @@ def bimcv_covid19_extract_subjects(dataframe: pd.DataFrame) -> tp.List[Subject]:
     return subjects
 
 
-def subjects_bimcv_covid19_positive(root: LikePath) -> tp.List[Subject]:
-    path = Path(root) / "covid19_posi_subjects.tar.gz"
-    subpath = "covid19_posi/participants.tsv"
-    with tools.open_from_tar(path, subpath) as file:
-        dataframe = pd.read_csv(file, sep="\t")
-    return bimcv_covid19_extract_subjects(dataframe)
+def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
+    return bimcv_covid19_subjects(
+        path=Path(root) / "covid19_posi_subjects.tar.gz",
+        subpath="covid19_posi/participants.tsv",
+    )
 
 
-def subjects_bimcv_covid19_negative(root: LikePath) -> tp.List[Subject]:
-    path = Path(root) / "covid19_neg_metadata.tar.gz"
-    subpath = "covid19_neg/participants.tsv"
-    with tools.open_from_tar(path, subpath) as file:
-        dataframe = pd.read_csv(file, sep="\t")
-    return bimcv_covid19_extract_subjects(dataframe)
+def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
+    return bimcv_covid19_subjects(
+        path=Path(root) / "covid19_neg_metadata.tar.gz",
+        subpath="covid19_neg/participants.tsv",
+    )
 
 
 def bimcv_covid19_read_sessions(path: LikePath) -> tp.List[Session]:
@@ -321,7 +322,7 @@ def extract_bimcv_covid19_positive(root: LikePath):
     logging.info("Destination directory: %s", str(dsroot.prepared))
 
     logging.info("Extracting information about subjects")
-    subjects = subjects_bimcv_covid19_positive(dsroot.original)
+    subjects = bimcv_covid19_positive_subjects(dsroot.original)
 
     logging.info("Extracting information about sessions")
     sessions = bimcv_covid19_positive_read_sessions(dsroot.original)
@@ -395,7 +396,7 @@ def extract_bimcv_covid19_negative(root: LikePath):
     logging.info("Destination directory: %s", str(dsroot.prepared))
 
     logging.info("Extracting information about subjects")
-    subjects = subjects_bimcv_covid19_negative(dsroot.original)
+    subjects = bimcv_covid19_negative_subjects(dsroot.original)
 
     logging.info("Extracting information about sessions")
     sessions = bimcv_covid19_negative_read_sessions(dsroot.original)
