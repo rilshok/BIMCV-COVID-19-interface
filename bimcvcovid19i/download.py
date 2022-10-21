@@ -42,13 +42,11 @@ def download_bimcv_covid19_negative(root: LikePath):
     )
 
 
-def extract_subjects(dataframe: pd.DataFrame) -> tp.List[Subject]:
+def bimcv_covid19_extract_subjects(dataframe: pd.DataFrame) -> tp.List[Subject]:
     subjects = []
     for row in dataframe.itertuples():
         if not row.participant.startswith("sub-"):
             continue
-        # assert row.body_parts == "[['CHEST']]"
-
         subject_uid = row.participant
 
         modalities = row.modality_dicom
@@ -81,28 +79,20 @@ def extract_subjects(dataframe: pd.DataFrame) -> tp.List[Subject]:
     return subjects
 
 
-def subjects_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
+def subjects_bimcv_covid19_positive(root: LikePath) -> tp.List[Subject]:
     path = Path(root) / "covid19_posi_subjects.tar.gz"
     subpath = "covid19_posi/participants.tsv"
     with tools.open_from_tar(path, subpath) as file:
-        return pd.read_csv(file, sep="\t")
-
-
-def subjects_dataframe_bimcv_covid19_negative(root: LikePath) -> pd.DataFrame:
-    path = Path(root) / "covid19_neg_metadata.tar.gz"
-    subpath = "covid19_neg/participants.tsv"
-    with tools.open_from_tar(path, subpath) as file:
-        return pd.read_csv(file, sep="\t")
-
-
-def subjects_bimcv_covid19_positive(root: LikePath) -> tp.List[Subject]:
-    dataframe = subjects_dataframe_bimcv_covid19_positive(root)
-    return extract_subjects(dataframe)
+        dataframe = pd.read_csv(file, sep="\t")
+    return bimcv_covid19_extract_subjects(dataframe)
 
 
 def subjects_bimcv_covid19_negative(root: LikePath) -> tp.List[Subject]:
-    dataframe = subjects_dataframe_bimcv_covid19_negative(root)
-    return extract_subjects(dataframe)
+    path = Path(root) / "covid19_neg_metadata.tar.gz"
+    subpath = "covid19_neg/participants.tsv"
+    with tools.open_from_tar(path, subpath) as file:
+        dataframe = pd.read_csv(file, sep="\t")
+    return bimcv_covid19_extract_subjects(dataframe)
 
 
 def read_sessions_bimcv_covid19_positive(root_bimcv_covid19) -> tp.List[Session]:
@@ -158,7 +148,6 @@ def iterate_sessions_bimcv_covid19_positive(root: LikePath) -> tp.Iterator[Path]
         for part_path in part_paths:
             logging.info("Start processing tar file: %s", part_path.name)
             part_file = tarfile.open(part_path)
-
             members = part_file.getmembers()
 
             # extracting root paths for sessions inside an archive
@@ -298,31 +287,19 @@ def extract_labels(dataframe: pd.DataFrame) -> tp.Dict[str, Labels]:
     }
 
 
-def tests_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
+def tests_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, tp.List[Test]]:
     path = Path(root) / "covid19_posi_head.tar.gz"
     subpath = "covid19_posi/derivatives/EHR/sil_reg_covid_posi.tsv"
-    with tarfile.open(path) as file_head:
-        member = file_head.extractfile(subpath)
-        assert member is not None
-        return pd.read_csv(member, sep="\t")
-
-
-def tests_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, tp.List[Test]]:
-    dataframe = tests_dataframe_bimcv_covid19_positive(root)
+    with tools.open_from_tar(path, subpath) as file:
+        dataframe = pd.read_csv(file, sep="\t")
     return extract_tests(dataframe)
 
 
-def labels_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
+def labels_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, Labels]:
     path = Path(root) / "covid19_posi_head.tar.gz"
     subpath = "covid19_posi/derivatives/labels/labels_covid_posi.tsv"
-    with tarfile.open(path) as file:
-        member = file.extractfile(subpath)
-        assert member is not None
-        return pd.read_csv(member, sep="\t")
-
-
-def labels_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, Labels]:
-    dataframe = labels_dataframe_bimcv_covid19_positive(root)
+    with tools.open_from_tar(path, subpath) as file:
+        dataframe = pd.read_csv(file, sep="\t")
     return extract_labels(dataframe)
 
 
