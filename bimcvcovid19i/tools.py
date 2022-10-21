@@ -17,13 +17,16 @@ __all__ = [
     "spacing_from_tags",
     "parse_dicom_tags",
     "derepr_strings_list",
+    "open_from_tar",
 ]
 
 import contextlib
 import gzip
 import itertools as it
 import json
+import tarfile
 import typing as tp
+from pathlib import Path
 
 import nibabel as nib  # type: ignore
 import numpy as np
@@ -188,3 +191,12 @@ def derepr_strings_list(string):
     pure_strings = skip_empty(without_double_spaces)
     pure_strings = list(string for string in pure_strings if string != "[]")
     return pure_strings
+
+
+@contextlib.contextmanager
+def open_from_tar(path: LikePath, subpath: LikePath):
+    path = str(Path(path).absolute())
+    with tarfile.open(path) as file:
+        member = file.extractfile(str(subpath))
+        assert member is not None
+        yield member
