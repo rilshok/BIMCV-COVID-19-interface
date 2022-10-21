@@ -42,21 +42,12 @@ def download_bimcv_covid19_negative(root: LikePath):
     )
 
 
-def subjects_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
-    path = Path(root) / "covid19_posi_subjects.tar.gz"
-    with tarfile.open(path) as file:
-        member = file.extractfile("covid19_posi/participants.tsv")
-        assert member is not None
-        return pd.read_csv(member, sep="\t")
-
-
-def subjects_bimcv_covid19_positive(root: LikePath) -> tp.List[Subject]:
-    dataframe = subjects_dataframe_bimcv_covid19_positive(root)
+def extract_subjects(dataframe: pd.DataFrame) -> tp.List[Subject]:
     subjects = []
     for row in dataframe.itertuples():
         if not row.participant.startswith("sub-"):
             continue
-        assert row.body_parts == "[['CHEST']]"
+        # assert row.body_parts == "[['CHEST']]"
 
         subject_uid = row.participant
 
@@ -88,6 +79,34 @@ def subjects_bimcv_covid19_positive(root: LikePath) -> tp.List[Subject]:
         )
         subjects.append(subject)
     return subjects
+
+
+def subjects_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
+    path = Path(root) / "covid19_posi_subjects.tar.gz"
+    subpath = "covid19_posi/participants.tsv"
+    with tarfile.open(path) as file:
+        member = file.extractfile(subpath)
+        assert member is not None
+        return pd.read_csv(member, sep="\t")
+
+
+def subjects_dataframe_bimcv_covid19_negative(root: LikePath) -> pd.DataFrame:
+    path = Path(root) / "covid19_neg_metadata.tar.gz"
+    subpath = "covid19_neg/participants.tsv"
+    with tarfile.open(path) as file:
+        member = file.extractfile(subpath)
+        assert member is not None
+        return pd.read_csv(member, sep="\t")
+
+
+def subjects_bimcv_covid19_positive(root: LikePath) -> tp.List[Subject]:
+    dataframe = subjects_dataframe_bimcv_covid19_positive(root)
+    return extract_subjects(dataframe)
+
+
+def subjects_bimcv_covid19_negative(root: LikePath) -> tp.List[Subject]:
+    dataframe = subjects_dataframe_bimcv_covid19_negative(root)
+    return extract_subjects(dataframe)
 
 
 def read_sessions_bimcv_covid19_positive(root_bimcv_covid19) -> tp.List[Session]:
@@ -316,8 +335,10 @@ def extract_bimcv_covid19_positive(root: LikePath):
     assert dsroot.original.exists()
     logging.info("Source directory: %s", str(dsroot.original))
     logging.info("Destination directory: %s", str(dsroot.prepared))
+
     logging.info("Extracting information about subjects")
     subjects = subjects_bimcv_covid19_positive(dsroot.original)
+
     logging.info("Extracting information about sessions")
     sessions = read_sessions_bimcv_covid19_positive(dsroot.original)
 
@@ -388,4 +409,6 @@ def extract_bimcv_covid19_negative(root: LikePath):
     assert dsroot.original.exists()
     logging.info("Source directory: %s", str(dsroot.original))
     logging.info("Destination directory: %s", str(dsroot.prepared))
-    ...
+
+    logging.info("Extracting information about subjects")
+    subjects = subjects_bimcv_covid19_positive(dsroot.original)
