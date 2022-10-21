@@ -84,19 +84,15 @@ def extract_subjects(dataframe: pd.DataFrame) -> tp.List[Subject]:
 def subjects_dataframe_bimcv_covid19_positive(root: LikePath) -> pd.DataFrame:
     path = Path(root) / "covid19_posi_subjects.tar.gz"
     subpath = "covid19_posi/participants.tsv"
-    with tarfile.open(path) as file:
-        member = file.extractfile(subpath)
-        assert member is not None
-        return pd.read_csv(member, sep="\t")
+    with tools.open_from_tar(path, subpath) as file:
+        return pd.read_csv(file, sep="\t")
 
 
 def subjects_dataframe_bimcv_covid19_negative(root: LikePath) -> pd.DataFrame:
     path = Path(root) / "covid19_neg_metadata.tar.gz"
     subpath = "covid19_neg/participants.tsv"
-    with tarfile.open(path) as file:
-        member = file.extractfile(subpath)
-        assert member is not None
-        return pd.read_csv(member, sep="\t")
+    with tools.open_from_tar(path, subpath) as file:
+        return pd.read_csv(file, sep="\t")
 
 
 def subjects_bimcv_covid19_positive(root: LikePath) -> tp.List[Subject]:
