@@ -256,42 +256,12 @@ class BIMCVCOVID19negative(BIMCVCOVID19):
     labels_tarfile_subpath = "covid19_neg/derivatives/labels/Labels_covid_NEG_JAN21.tsv"
 
 
-# POSITIVE
-
-
 def download_bimcv_covid19_positive(root: LikePath):
     return BIMCVCOVID19positive.download(root)
 
 
-def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
-    return BIMCVCOVID19positive.subjects(root)
-
-
-def bimcv_covid19_positive_sessions(root: LikePath) -> tp.List[Session]:
-    return BIMCVCOVID19positive.sessions(root)
-
-
-def bimcv_covid19_positive_tests(root: LikePath) -> tp.Dict[str, tp.List[Test]]:
-    return BIMCVCOVID19positive.tests(root)
-
-
-def bimcv_covid19_positive_labels(root: LikePath) -> tp.Dict[str, Labels]:
-    return BIMCVCOVID19positive.labels(root)
-
-
-# NEGATIVE
-
-
 def download_bimcv_covid19_negative(root: LikePath):
     return BIMCVCOVID19negative.download(root)
-
-
-def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
-    return BIMCVCOVID19negative.subjects(root)
-
-
-def bimcv_covid19_negative_sessions(root: LikePath) -> tp.List[Session]:
-    return BIMCVCOVID19negative.sessions(root)
 
 
 def iterate_sessions_bimcv_covid19_positive(root: LikePath) -> tp.Iterator[Path]:
@@ -406,10 +376,11 @@ def extract_bimcv_covid19_positive(root: LikePath):
     logging.info("Destination directory: %s", str(dsroot.prepared))
 
     logging.info("Extracting information about subjects")
-    subjects = bimcv_covid19_positive_subjects(dsroot.original)
+
+    subjects = BIMCVCOVID19positive.subjects(dsroot.original)
 
     logging.info("Extracting information about sessions")
-    sessions = bimcv_covid19_positive_sessions(dsroot.original)
+    sessions = BIMCVCOVID19positive.sessions(dsroot.original)
 
     assert set(map(op.attrgetter("uid"), subjects)) == set(
         map(op.attrgetter("subject_id"), sessions)
@@ -418,10 +389,10 @@ def extract_bimcv_covid19_positive(root: LikePath):
     sessions_map = {ses.uid: ses for ses in sessions}
 
     logging.info("Extracting information about COVID test results")
-    tests = bimcv_covid19_positive_tests(dsroot.original)
+    tests = BIMCVCOVID19positive.tests(dsroot.original)
 
     logging.info("Extracting session semantic markup")
-    labels = bimcv_covid19_positive_labels(dsroot.original)
+    labels = BIMCVCOVID19positive.labels(dsroot.original)
 
     logging.info("Creating root directories")
     for directory in [
@@ -480,7 +451,7 @@ def extract_bimcv_covid19_negative(root: LikePath):
     logging.info("Destination directory: %s", str(dsroot.prepared))
 
     logging.info("Extracting information about subjects")
-    subjects = bimcv_covid19_negative_subjects(dsroot.original)
+    subjects = BIMCVCOVID19negative.subjects(dsroot.original)
 
     logging.info("Extracting information about sessions")
-    sessions = bimcv_covid19_negative_sessions(dsroot.original)
+    sessions = BIMCVCOVID19negative.sessions(dsroot.original)
