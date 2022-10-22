@@ -38,12 +38,17 @@ class BIMCVCOVID19:
     tests_tarfile_name: str
     tests_tarfile_subpath: str
 
+    labels_tarfile_name: str
+    labels_tarfile_subpath: str
+
     def __init__(self, root: LikePath):
         root = Path(root).absolute()
         apply_default_root = [
             "download",
             "subjects",
             "sessions",
+            "tests",
+            "labels",
         ]
         for method in apply_default_root:
             func_ = getattr(self, method)
@@ -75,6 +80,13 @@ class BIMCVCOVID19:
         return cls._tests(
             path=Path(root) / cls.tests_tarfile_name,
             subpath=cls.tests_tarfile_subpath,
+        )
+
+    @classmethod
+    def labels(cls, root: LikePath) -> tp.Dict[str, Labels]:
+        return cls._labels(
+            path=Path(root) / cls.labels_tarfile_name,
+            subpath=cls.labels_tarfile_subpath,
         )
 
     @staticmethod
@@ -189,6 +201,26 @@ class BIMCVCOVID19:
             for subject_id, group in it.groupby(all_tests, op.attrgetter("subject_id"))
         }
 
+    @staticmethod
+    def _labels(path: LikePath, subpath: LikePath) -> tp.Dict[str, Labels]:
+        with tools.open_from_tar(path, subpath) as file:
+            dataframe = pd.read_csv(file, sep="\t")
+        return {
+            row.ReportID: Labels(
+                subject_id=row.PatientID,
+                session_id=row.ReportID,
+                report=tools.derepr_medical_evaluation_text(row.Report),
+                labels=tools.derepr_strings_list(row.Labels),
+                localizations=tools.derepr_strings_list(row.Localizations),
+                labels_localizations_by_sentence=tools.derepr_strings_list(
+                    row.LabelsLocalizationsBySentence
+                ),
+                label_CUIS=tools.derepr_CUIS(row.labelCUIS),
+                localizations_CUIS=tools.derepr_CUIS(row.LocalizationsCUIS),
+            )
+            for row in dataframe.itertuples()
+        }
+
 
 class BIMCVCOVID19positive(BIMCVCOVID19):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
@@ -203,6 +235,9 @@ class BIMCVCOVID19positive(BIMCVCOVID19):
     tests_tarfile_name = "covid19_posi_head.tar.gz"
     tests_tarfile_subpath = "covid19_posi/derivatives/EHR/sil_reg_covid_posi.tsv"
 
+    labels_tarfile_name = "covid19_posi_head.tar.gz"
+    labels_tarfile_subpath = "covid19_posi/derivatives/labels/labels_covid_posi.tsv"
+
 
 class BIMCVCOVID19negative(BIMCVCOVID19):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
@@ -216,6 +251,9 @@ class BIMCVCOVID19negative(BIMCVCOVID19):
 
     tests_tarfile_name = "---"
     tests_tarfile_subpath = "---"
+
+    labels_tarfile_name = "???"
+    labels_tarfile_subpath = "???"
 
 
 # POSITIVE
@@ -235,6 +273,10 @@ def bimcv_covid19_positive_sessions(root: LikePath) -> tp.List[Session]:
 
 def bimcv_covid19_positive_tests(root: LikePath) -> tp.Dict[str, tp.List[Test]]:
     return BIMCVCOVID19positive.tests(root)
+
+
+def bimcv_covid19_positive_labels(root: LikePath) -> tp.Dict[str, Labels]:
+    return BIMCVCOVID19positive.labels(root)
 
 
 # NEGATIVE
@@ -357,32 +399,6 @@ def group_series_files_by_name(session_root: Path) -> tp.Iterator[SeriesRawPath]
         )
 
 
-def extract_labels(dataframe: pd.DataFrame) -> tp.Dict[str, Labels]:
-    return {
-        row.ReportID: Labels(
-            subject_id=row.PatientID,
-            session_id=row.ReportID,
-            report=tools.derepr_medical_evaluation_text(row.Report),
-            labels=tools.derepr_strings_list(row.Labels),
-            localizations=tools.derepr_strings_list(row.Localizations),
-            labels_localizations_by_sentence=tools.derepr_strings_list(
-                row.LabelsLocalizationsBySentence
-            ),
-            label_CUIS=tools.derepr_CUIS(row.labelCUIS),
-            localizations_CUIS=tools.derepr_CUIS(row.LocalizationsCUIS),
-        )
-        for row in dataframe.itertuples()
-    }
-
-
-def labels_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, Labels]:
-    path = Path(root) / "covid19_posi_head.tar.gz"
-    subpath = "covid19_posi/derivatives/labels/labels_covid_posi.tsv"
-    with tools.open_from_tar(path, subpath) as file:
-        dataframe = pd.read_csv(file, sep="\t")
-    return extract_labels(dataframe)
-
-
 def extract_bimcv_covid19_positive(root: LikePath):
     dsroot = BIMCVCOVID19Root(root)
     assert dsroot.original.exists()
@@ -405,7 +421,7 @@ def extract_bimcv_covid19_positive(root: LikePath):
     tests = bimcv_covid19_positive_tests(dsroot.original)
 
     logging.info("Extracting session semantic markup")
-    labels = labels_bimcv_covid19_positive(dsroot.original)
+    labels = bimcv_covid19_positive_labels(dsroot.original)
 
     logging.info("Creating root directories")
     for directory in [
