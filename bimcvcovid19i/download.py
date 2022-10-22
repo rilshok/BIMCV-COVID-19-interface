@@ -252,8 +252,8 @@ class BIMCVCOVID19negative(BIMCVCOVID19):
     tests_tarfile_name = "---"
     tests_tarfile_subpath = "---"
 
-    labels_tarfile_name = "???"
-    labels_tarfile_subpath = "???"
+    labels_tarfile_name = "covid19_neg_derivative.tar.gz"
+    labels_tarfile_subpath = "covid19_neg/derivatives/labels/Labels_covid_NEG_JAN21.tsv"
 
 
 # POSITIVE
