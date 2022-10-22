@@ -24,22 +24,42 @@ from .typing import (
 from .webdav import webdav_download_all
 
 
+class BIMCVCOVID19:
+    webdav_hostname: str
+    webdav_login: str
+    webdav_password: str
+
+    @classmethod
+    def download(cls, root: LikePath):
+        return webdav_download_all(
+            root=BIMCVCOVID19Root(root).original,
+            webdav_hostname=cls.webdav_hostname,
+            webdav_login=cls.webdav_login,
+            webdav_password=cls.webdav_password,
+        )
+
+
+class BIMCVCOVID19positive(BIMCVCOVID19):
+    webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
+    webdav_login = "BIMCV-COVID19-cIter_1_2"
+    webdav_password = "maybeempty"
+
+
+class BIMCVCOVID19negative(BIMCVCOVID19):
+    webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
+    webdav_login = "BIMCV-COVID19-cIter_1_2-Negative"
+    webdav_password = "maybeempty"
+
+
 def download_bimcv_covid19_positive(root: LikePath):
-    return webdav_download_all(
-        root=BIMCVCOVID19Root(root).original,
-        webdav_hostname="https://b2drop.bsc.es/public.php/webdav",
-        webdav_login="BIMCV-COVID19-cIter_1_2",
-        webdav_password="maybeempty",
-    )
+    return BIMCVCOVID19positive.download(root)
 
 
 def download_bimcv_covid19_negative(root: LikePath):
-    return webdav_download_all(
-        root=BIMCVCOVID19Root(root).original,
-        webdav_hostname="https://b2drop.bsc.es/public.php/webdav",
-        webdav_login="BIMCV-COVID19-cIter_1_2-Negative",
-        webdav_password="maybeempty",
-    )
+    return BIMCVCOVID19negative.download(root)
+
+
+# GENERAL
 
 
 def bimcv_covid19_subjects(path: LikePath, subpath: LikePath) -> tp.List[Subject]:
@@ -80,20 +100,6 @@ def bimcv_covid19_subjects(path: LikePath, subpath: LikePath) -> tp.List[Subject
         )
         subjects.append(subject)
     return subjects
-
-
-def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
-    return bimcv_covid19_subjects(
-        path=Path(root) / "covid19_posi_subjects.tar.gz",
-        subpath="covid19_posi/participants.tsv",
-    )
-
-
-def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
-    return bimcv_covid19_subjects(
-        path=Path(root) / "covid19_neg_metadata.tar.gz",
-        subpath="covid19_neg/participants.tsv",
-    )
 
 
 def bimcv_covid19_sessions(path: LikePath) -> tp.List[Session]:
@@ -141,15 +147,35 @@ def bimcv_covid19_sessions(path: LikePath) -> tp.List[Session]:
     return sessions
 
 
+# POSITIVE
+
+
+def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
+    return bimcv_covid19_subjects(
+        path=Path(root) / "covid19_posi_subjects.tar.gz",
+        subpath="covid19_posi/participants.tsv",
+    )
+
+
 def bimcv_covid19_positive_sessions(root: LikePath) -> tp.List[Session]:
-    path = Path(root) / "covid19_posi_sessions_tsv.tar.gz"
-    return bimcv_covid19_sessions(path)
+    "processing covid19_posi_sessions_tsv.tar.gz"
+
+    return bimcv_covid19_sessions(path=Path(root) / "covid19_posi_sessions_tsv.tar.gz")
+
+
+# NEGATIVE
+
+
+def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
+    return bimcv_covid19_subjects(
+        path=Path(root) / "covid19_neg_metadata.tar.gz",
+        subpath="covid19_neg/participants.tsv",
+    )
 
 
 def bimcv_covid19_negative_sessions(root: LikePath) -> tp.List[Session]:
     "processing covid19_neg_sessions_tsv.tar.gz"
-    path = Path(root) / "covid19_neg_sessions_tsv.tar.gz"
-    return bimcv_covid19_sessions(path)
+    return bimcv_covid19_sessions(path=Path(root) / "covid19_neg_sessions_tsv.tar.gz")
 
 
 def iterate_sessions_bimcv_covid19_positive(root: LikePath) -> tp.Iterator[Path]:
@@ -257,7 +283,7 @@ def group_series_files_by_name(session_root: Path) -> tp.Iterator[SeriesRawPath]
         )
 
 
-def extract_tests(dataframe: pd.DataFrame) -> tp.Dict[str, tp.List[Test]]:
+def bimcv_covid19_tests(dataframe: pd.DataFrame) -> tp.Dict[str, tp.List[Test]]:
     """Subject grouped tests (PCR, ACT, etc.)"""
     results_map = dict(
         INDETERMINADO="indeterminate",
@@ -304,7 +330,7 @@ def tests_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, tp.List[Test]]:
     subpath = "covid19_posi/derivatives/EHR/sil_reg_covid_posi.tsv"
     with tools.open_from_tar(path, subpath) as file:
         dataframe = pd.read_csv(file, sep="\t")
-    return extract_tests(dataframe)
+    return bimcv_covid19_tests(dataframe)
 
 
 def labels_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, Labels]:
