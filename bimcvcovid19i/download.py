@@ -13,8 +13,15 @@ import pandas as pd  # type: ignore
 from tqdm import tqdm  # type: ignore
 
 from . import tools
-from .typing import (BIMCVCOVID19Root, Labels, LikePath, SeriesRawPath,
-                     Session, Subject, Test)
+from .typing import (
+    BIMCVCOVID19Root,
+    Labels,
+    LikePath,
+    SeriesRawPath,
+    Session,
+    Subject,
+    Test,
+)
 from .webdav import webdav_download_all
 
 
@@ -28,6 +35,9 @@ class BIMCVCOVID19:
 
     sessions_tarfile_name: str
 
+    tests_tarfile_name: str
+    tests_tarfile_subpath: str
+
     def __init__(self, root: LikePath):
         root = Path(root).absolute()
         apply_default_root = [
@@ -39,7 +49,6 @@ class BIMCVCOVID19:
             func_ = getattr(self, method)
             func = ft.partial(func_, root=root)
             setattr(self, method, func)
-
 
     @classmethod
     def download(cls, root: LikePath):
@@ -60,6 +69,13 @@ class BIMCVCOVID19:
     @classmethod
     def sessions(cls, root: LikePath) -> tp.List[Session]:
         return cls._sessions(path=Path(root) / cls.sessions_tarfile_name)
+
+    @classmethod
+    def tests(cls, root: LikePath) -> tp.Dict[str, tp.List[Test]]:
+        return cls._tests(
+            path=Path(root) / cls.tests_tarfile_name,
+            subpath=cls.tests_tarfile_subpath,
+        )
 
     @staticmethod
     def _subjects(path: LikePath, subpath: LikePath) -> tp.List[Subject]:
@@ -146,6 +162,33 @@ class BIMCVCOVID19:
         all_sessions_file.close()
         return sessions
 
+    @staticmethod
+    def _tests(path: LikePath, subpath: LikePath) -> tp.Dict[str, tp.List[Test]]:
+        """Subject grouped tests (PCR, ACT, etc.)"""
+        with tools.open_from_tar(path, subpath) as file:
+            dataframe = pd.read_csv(file, sep="\t")
+
+        results_map = dict(
+            INDETERMINADO="indeterminate",
+            NEGATIVO="negative",
+            POSITIVO="positive",
+        )
+        all_tests = list(
+            Test(
+                subject_id=row.participant,
+                date="-".join(row.date.split(".")[::-1]),
+                test=row.test,
+                result=results_map[row.result],
+            )
+            for row in dataframe.itertuples()
+        )
+        # grouping test results by subject ID
+        # with sorting by date
+        return {
+            subject_id: sorted(group, key=op.attrgetter("date"))
+            for subject_id, group in it.groupby(all_tests, op.attrgetter("subject_id"))
+        }
+
 
 class BIMCVCOVID19positive(BIMCVCOVID19):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
@@ -157,6 +200,9 @@ class BIMCVCOVID19positive(BIMCVCOVID19):
 
     sessions_tarfile_name = "covid19_posi_sessions_tsv.tar.gz"
 
+    tests_tarfile_name = "covid19_posi_head.tar.gz"
+    tests_tarfile_subpath = "covid19_posi/derivatives/EHR/sil_reg_covid_posi.tsv"
+
 
 class BIMCVCOVID19negative(BIMCVCOVID19):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
@@ -167,6 +213,9 @@ class BIMCVCOVID19negative(BIMCVCOVID19):
     subjects_tarfile_subpath = "covid19_neg/participants.tsv"
 
     sessions_tarfile_name = "covid19_neg_sessions_tsv.tar.gz"
+
+    tests_tarfile_name = "---"
+    tests_tarfile_subpath = "---"
 
 
 # POSITIVE
@@ -182,6 +231,10 @@ def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
 
 def bimcv_covid19_positive_sessions(root: LikePath) -> tp.List[Session]:
     return BIMCVCOVID19positive.sessions(root)
+
+
+def bimcv_covid19_positive_tests(root: LikePath) -> tp.Dict[str, tp.List[Test]]:
+    return BIMCVCOVID19positive.tests(root)
 
 
 # NEGATIVE
@@ -304,30 +357,6 @@ def group_series_files_by_name(session_root: Path) -> tp.Iterator[SeriesRawPath]
         )
 
 
-def bimcv_covid19_tests(dataframe: pd.DataFrame) -> tp.Dict[str, tp.List[Test]]:
-    """Subject grouped tests (PCR, ACT, etc.)"""
-    results_map = dict(
-        INDETERMINADO="indeterminate",
-        NEGATIVO="negative",
-        POSITIVO="positive",
-    )
-    all_tests = list(
-        Test(
-            subject_id=row.participant,
-            date="-".join(row.date.split(".")[::-1]),
-            test=row.test,
-            result=results_map[row.result],
-        )
-        for row in dataframe.itertuples()
-    )
-    # grouping test results by subject ID
-    # with sorting by date
-    return {
-        subject_id: sorted(group, key=op.attrgetter("date"))
-        for subject_id, group in it.groupby(all_tests, op.attrgetter("subject_id"))
-    }
-
-
 def extract_labels(dataframe: pd.DataFrame) -> tp.Dict[str, Labels]:
     return {
         row.ReportID: Labels(
@@ -344,14 +373,6 @@ def extract_labels(dataframe: pd.DataFrame) -> tp.Dict[str, Labels]:
         )
         for row in dataframe.itertuples()
     }
-
-
-def tests_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, tp.List[Test]]:
-    path = Path(root) / "covid19_posi_head.tar.gz"
-    subpath = "covid19_posi/derivatives/EHR/sil_reg_covid_posi.tsv"
-    with tools.open_from_tar(path, subpath) as file:
-        dataframe = pd.read_csv(file, sep="\t")
-    return bimcv_covid19_tests(dataframe)
 
 
 def labels_bimcv_covid19_positive(root: LikePath) -> tp.Dict[str, Labels]:
@@ -381,7 +402,7 @@ def extract_bimcv_covid19_positive(root: LikePath):
     sessions_map = {ses.uid: ses for ses in sessions}
 
     logging.info("Extracting information about COVID test results")
-    tests = tests_bimcv_covid19_positive(dsroot.original)
+    tests = bimcv_covid19_positive_tests(dsroot.original)
 
     logging.info("Extracting session semantic markup")
     labels = labels_bimcv_covid19_positive(dsroot.original)
