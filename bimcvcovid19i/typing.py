@@ -1,7 +1,6 @@
 __all__ = [
     "LikePath",
     "DatasetRoot",
-    "BIMCVCOVID19Root",
     "Subject",
     "Session",
     "Labels",
@@ -39,26 +38,6 @@ class DatasetRoot:
     @property
     def prepared(self) -> Path:
         return self._prepared
-
-
-class BIMCVCOVID19Root(DatasetRoot):
-    def __init__(self, root):
-        super().__init__(root)
-        self._prepared_series = self.prepared / "series"
-        self._prepared_sessions = self.prepared / "sessions"
-        self._prepared_subjects = self.prepared / "subjects"
-
-    @property
-    def prepared_series(self) -> Path:
-        return self._prepared_series
-
-    @property
-    def prepared_sessions(self) -> Path:
-        return self._prepared_sessions
-
-    @property
-    def prepared_subjects(self) -> Path:
-        return self._prepared_subjects
 
 
 @dataclass

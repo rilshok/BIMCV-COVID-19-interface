@@ -14,7 +14,7 @@ from tqdm import tqdm  # type: ignore
 
 from . import tools
 from .typing import (
-    BIMCVCOVID19Root,
+    DatasetRoot,
     Labels,
     LikePath,
     SeriesRawPath,
@@ -23,6 +23,26 @@ from .typing import (
     Test,
 )
 from .webdav import webdav_download_all
+
+
+class BIMCVCOVID19Root(DatasetRoot):
+    def __init__(self, root):
+        super().__init__(root)
+        self._prepared_series = self.prepared / "series"
+        self._prepared_sessions = self.prepared / "sessions"
+        self._prepared_subjects = self.prepared / "subjects"
+
+    @property
+    def prepared_series(self) -> Path:
+        return self._prepared_series
+
+    @property
+    def prepared_sessions(self) -> Path:
+        return self._prepared_sessions
+
+    @property
+    def prepared_subjects(self) -> Path:
+        return self._prepared_subjects
 
 
 class BIMCVCOVID19:
@@ -67,25 +87,27 @@ class BIMCVCOVID19:
     @classmethod
     def subjects(cls, root: LikePath) -> tp.List[Subject]:
         return cls._subjects(
-            path=Path(root) / cls.subjects_tarfile_name,
+            path=BIMCVCOVID19Root(root).original / cls.subjects_tarfile_name,
             subpath=cls.subjects_tarfile_subpath,
         )
 
     @classmethod
     def sessions(cls, root: LikePath) -> tp.List[Session]:
-        return cls._sessions(path=Path(root) / cls.sessions_tarfile_name)
+        return cls._sessions(
+            path=BIMCVCOVID19Root(root).original / cls.sessions_tarfile_name
+        )
 
     @classmethod
     def tests(cls, root: LikePath) -> tp.Dict[str, tp.List[Test]]:
         return cls._tests(
-            path=Path(root) / cls.tests_tarfile_name,
+            path=BIMCVCOVID19Root(root).original / cls.tests_tarfile_name,
             subpath=cls.tests_tarfile_subpath,
         )
 
     @classmethod
     def labels(cls, root: LikePath) -> tp.Dict[str, Labels]:
         return cls._labels(
-            path=Path(root) / cls.labels_tarfile_name,
+            path=BIMCVCOVID19Root(root).original / cls.labels_tarfile_name,
             subpath=cls.labels_tarfile_subpath,
         )
 
@@ -376,11 +398,10 @@ def extract_bimcv_covid19_positive(root: LikePath):
     logging.info("Destination directory: %s", str(dsroot.prepared))
 
     logging.info("Extracting information about subjects")
-
-    subjects = BIMCVCOVID19positive.subjects(dsroot.original)
+    subjects = BIMCVCOVID19positive.subjects(root)
 
     logging.info("Extracting information about sessions")
-    sessions = BIMCVCOVID19positive.sessions(dsroot.original)
+    sessions = BIMCVCOVID19positive.sessions(root)
 
     assert set(map(op.attrgetter("uid"), subjects)) == set(
         map(op.attrgetter("subject_id"), sessions)
@@ -389,10 +410,10 @@ def extract_bimcv_covid19_positive(root: LikePath):
     sessions_map = {ses.uid: ses for ses in sessions}
 
     logging.info("Extracting information about COVID test results")
-    tests = BIMCVCOVID19positive.tests(dsroot.original)
+    tests = BIMCVCOVID19positive.tests(root)
 
     logging.info("Extracting session semantic markup")
-    labels = BIMCVCOVID19positive.labels(dsroot.original)
+    labels = BIMCVCOVID19positive.labels(root)
 
     logging.info("Creating root directories")
     for directory in [
@@ -451,7 +472,7 @@ def extract_bimcv_covid19_negative(root: LikePath):
     logging.info("Destination directory: %s", str(dsroot.prepared))
 
     logging.info("Extracting information about subjects")
-    subjects = BIMCVCOVID19negative.subjects(dsroot.original)
+    subjects = BIMCVCOVID19negative.subjects(root)
 
     logging.info("Extracting information about sessions")
-    sessions = BIMCVCOVID19negative.sessions(dsroot.original)
+    sessions = BIMCVCOVID19negative.sessions(root)
