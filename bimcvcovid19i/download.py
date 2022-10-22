@@ -29,6 +29,9 @@ class BIMCVCOVID19:
     webdav_login: str
     webdav_password: str
 
+    subjects_tarfile_name: str
+    subjects_tarfile_subpath: str
+
     @classmethod
     def download(cls, root: LikePath):
         return webdav_download_all(
@@ -38,17 +41,78 @@ class BIMCVCOVID19:
             webdav_password=cls.webdav_password,
         )
 
+    @staticmethod
+    def _subjects(path: LikePath, subpath: LikePath) -> tp.List[Subject]:
+        with tools.open_from_tar(path, subpath) as file:
+            dataframe = pd.read_csv(file, sep="\t")
+
+        subjects = []
+        for row in dataframe.itertuples():
+            if not row.participant.startswith("sub-"):
+                continue
+            subject_uid = row.participant
+
+            modalities = row.modality_dicom
+            for character in "[']":
+                modalities = modalities.replace(character, "")
+            modalities = modalities.split(", ")
+
+            age = row.age
+            for character in "[']":
+                age = age.replace(character, "")
+            age = list(map(float, age.split(", "))) if age else None
+            age = sum(age) / len(age) if age else None
+
+            gender = row.gender
+            if gender == "None":
+                gender = None
+            if modalities == [""]:
+                modalities = []
+
+            subject = Subject(
+                uid=subject_uid,
+                modalities=modalities,
+                age=age,
+                gender=gender,
+                series_ids=[],
+                sessions_ids=[],
+                tests=None,
+            )
+            subjects.append(subject)
+        return subjects
+
+    @classmethod
+    def subjects(cls, root: LikePath) -> tp.List[Subject]:
+        return cls._subjects(
+            path=Path(root) / cls.subjects_tarfile_name,
+            subpath=cls.subjects_tarfile_subpath,
+        )
+
 
 class BIMCVCOVID19positive(BIMCVCOVID19):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2"
     webdav_password = "maybeempty"
 
+    subjects_tarfile_name = "covid19_posi_subjects.tar.gz"
+    subjects_tarfile_subpath = "covid19_posi/participants.tsv"
+
 
 class BIMCVCOVID19negative(BIMCVCOVID19):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2-Negative"
     webdav_password = "maybeempty"
+
+    subjects_tarfile_name = "covid19_neg_metadata.tar.gz"
+    subjects_tarfile_subpath = "covid19_neg/participants.tsv"
+
+
+def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
+    return BIMCVCOVID19positive.subjects(root)
+
+
+def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
+    return BIMCVCOVID19negative.subjects(root)
 
 
 def download_bimcv_covid19_positive(root: LikePath):
@@ -60,46 +124,6 @@ def download_bimcv_covid19_negative(root: LikePath):
 
 
 # GENERAL
-
-
-def bimcv_covid19_subjects(path: LikePath, subpath: LikePath) -> tp.List[Subject]:
-    with tools.open_from_tar(path, subpath) as file:
-        dataframe = pd.read_csv(file, sep="\t")
-
-    subjects = []
-    for row in dataframe.itertuples():
-        if not row.participant.startswith("sub-"):
-            continue
-        subject_uid = row.participant
-
-        modalities = row.modality_dicom
-        for character in "[']":
-            modalities = modalities.replace(character, "")
-        modalities = modalities.split(", ")
-
-        age = row.age
-        for character in "[']":
-            age = age.replace(character, "")
-        age = list(map(float, age.split(", "))) if age else None
-        age = sum(age) / len(age) if age else None
-
-        gender = row.gender
-        if gender == "None":
-            gender = None
-        if modalities == [""]:
-            modalities = []
-
-        subject = Subject(
-            uid=subject_uid,
-            modalities=modalities,
-            age=age,
-            gender=gender,
-            series_ids=[],
-            sessions_ids=[],
-            tests=None,
-        )
-        subjects.append(subject)
-    return subjects
 
 
 def bimcv_covid19_sessions(path: LikePath) -> tp.List[Session]:
@@ -150,13 +174,6 @@ def bimcv_covid19_sessions(path: LikePath) -> tp.List[Session]:
 # POSITIVE
 
 
-def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
-    return bimcv_covid19_subjects(
-        path=Path(root) / "covid19_posi_subjects.tar.gz",
-        subpath="covid19_posi/participants.tsv",
-    )
-
-
 def bimcv_covid19_positive_sessions(root: LikePath) -> tp.List[Session]:
     "processing covid19_posi_sessions_tsv.tar.gz"
 
@@ -164,13 +181,6 @@ def bimcv_covid19_positive_sessions(root: LikePath) -> tp.List[Session]:
 
 
 # NEGATIVE
-
-
-def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
-    return bimcv_covid19_subjects(
-        path=Path(root) / "covid19_neg_metadata.tar.gz",
-        subpath="covid19_neg/participants.tsv",
-    )
 
 
 def bimcv_covid19_negative_sessions(root: LikePath) -> tp.List[Session]:
