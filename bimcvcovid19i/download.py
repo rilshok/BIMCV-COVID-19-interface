@@ -1,3 +1,4 @@
+import functools as ft
 import itertools as it
 import logging
 import operator as op
@@ -12,15 +13,8 @@ import pandas as pd  # type: ignore
 from tqdm import tqdm  # type: ignore
 
 from . import tools
-from .typing import (
-    BIMCVCOVID19Root,
-    Labels,
-    LikePath,
-    SeriesRawPath,
-    Session,
-    Subject,
-    Test,
-)
+from .typing import (BIMCVCOVID19Root, Labels, LikePath, SeriesRawPath,
+                     Session, Subject, Test)
 from .webdav import webdav_download_all
 
 
@@ -32,6 +26,21 @@ class BIMCVCOVID19:
     subjects_tarfile_name: str
     subjects_tarfile_subpath: str
 
+    sessions_tarfile_name: str
+
+    def __init__(self, root: LikePath):
+        root = Path(root).absolute()
+        apply_default_root = [
+            "download",
+            "subjects",
+            "sessions",
+        ]
+        for method in apply_default_root:
+            func_ = getattr(self, method)
+            func = ft.partial(func_, root=root)
+            setattr(self, method, func)
+
+
     @classmethod
     def download(cls, root: LikePath):
         return webdav_download_all(
@@ -40,6 +49,17 @@ class BIMCVCOVID19:
             webdav_login=cls.webdav_login,
             webdav_password=cls.webdav_password,
         )
+
+    @classmethod
+    def subjects(cls, root: LikePath) -> tp.List[Subject]:
+        return cls._subjects(
+            path=Path(root) / cls.subjects_tarfile_name,
+            subpath=cls.subjects_tarfile_subpath,
+        )
+
+    @classmethod
+    def sessions(cls, root: LikePath) -> tp.List[Session]:
+        return cls._sessions(path=Path(root) / cls.sessions_tarfile_name)
 
     @staticmethod
     def _subjects(path: LikePath, subpath: LikePath) -> tp.List[Subject]:
@@ -81,12 +101,50 @@ class BIMCVCOVID19:
             subjects.append(subject)
         return subjects
 
-    @classmethod
-    def subjects(cls, root: LikePath) -> tp.List[Subject]:
-        return cls._subjects(
-            path=Path(root) / cls.subjects_tarfile_name,
-            subpath=cls.subjects_tarfile_subpath,
-        )
+    @staticmethod
+    def _sessions(path: LikePath) -> tp.List[Session]:
+        """read sessions from *sessions_tsv.tar.gz file"""
+        path = Path(path)
+        sessions = []
+        all_sessions_file = tarfile.open(path)
+        for sesions_file_member in all_sessions_file.getmembers():
+            subject_id = sesions_file_member.name.split("/")[1]
+            assert subject_id.startswith("sub-")
+
+            sesions_file = all_sessions_file.extractfile(sesions_file_member)
+            assert sesions_file is not None
+            sesions_dataframe = pd.read_csv(sesions_file, sep="\t")
+
+            for sesion_row in sesions_dataframe.itertuples():
+                session_id = sesion_row.session_id
+                study_date = sesion_row.study_date
+                medical_evaluation = sesion_row.medical_evaluation
+
+                assert session_id.startswith("ses-")
+
+                if study_date != study_date:
+                    study_date = None
+                else:
+                    study_date = str(int(study_date))
+                    assert len(study_date) == 8, study_date
+                    study_date = f"{study_date[:4]}-{study_date[4:6]}-{study_date[6:]}"
+
+                medical_evaluation = tools.derepr_medical_evaluation_text(
+                    medical_evaluation
+                )
+
+                session = Session(
+                    uid=session_id,
+                    subject_id=subject_id,
+                    study_date=study_date,
+                    medical_evaluation=medical_evaluation,
+                    series_modalities=[],
+                    series_ids=[],
+                    labels=None,
+                )
+                sessions.append(session)
+        all_sessions_file.close()
+        return sessions
 
 
 class BIMCVCOVID19positive(BIMCVCOVID19):
@@ -97,6 +155,8 @@ class BIMCVCOVID19positive(BIMCVCOVID19):
     subjects_tarfile_name = "covid19_posi_subjects.tar.gz"
     subjects_tarfile_subpath = "covid19_posi/participants.tsv"
 
+    sessions_tarfile_name = "covid19_posi_sessions_tsv.tar.gz"
+
 
 class BIMCVCOVID19negative(BIMCVCOVID19):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
@@ -106,86 +166,37 @@ class BIMCVCOVID19negative(BIMCVCOVID19):
     subjects_tarfile_name = "covid19_neg_metadata.tar.gz"
     subjects_tarfile_subpath = "covid19_neg/participants.tsv"
 
-
-def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
-    return BIMCVCOVID19positive.subjects(root)
+    sessions_tarfile_name = "covid19_neg_sessions_tsv.tar.gz"
 
 
-def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
-    return BIMCVCOVID19negative.subjects(root)
+# POSITIVE
 
 
 def download_bimcv_covid19_positive(root: LikePath):
     return BIMCVCOVID19positive.download(root)
 
 
-def download_bimcv_covid19_negative(root: LikePath):
-    return BIMCVCOVID19negative.download(root)
-
-
-# GENERAL
-
-
-def bimcv_covid19_sessions(path: LikePath) -> tp.List[Session]:
-    """read sessions from *sessions_tsv.tar.gz file"""
-    path = Path(path)
-    sessions = []
-    all_sessions_file = tarfile.open(path)
-    for sesions_file_member in all_sessions_file.getmembers():
-        subject_id = sesions_file_member.name.split("/")[1]
-        assert subject_id.startswith("sub-")
-
-        sesions_file = all_sessions_file.extractfile(sesions_file_member)
-        assert sesions_file is not None
-        sesions_dataframe = pd.read_csv(sesions_file, sep="\t")
-
-        for sesion_row in sesions_dataframe.itertuples():
-            session_id = sesion_row.session_id
-            study_date = sesion_row.study_date
-            medical_evaluation = sesion_row.medical_evaluation
-
-            assert session_id.startswith("ses-")
-
-            if study_date != study_date:
-                study_date = None
-            else:
-                study_date = str(int(study_date))
-                assert len(study_date) == 8, study_date
-                study_date = f"{study_date[:4]}-{study_date[4:6]}-{study_date[6:]}"
-
-            medical_evaluation = tools.derepr_medical_evaluation_text(
-                medical_evaluation
-            )
-
-            session = Session(
-                uid=session_id,
-                subject_id=subject_id,
-                study_date=study_date,
-                medical_evaluation=medical_evaluation,
-                series_modalities=[],
-                series_ids=[],
-                labels=None,
-            )
-            sessions.append(session)
-    all_sessions_file.close()
-    return sessions
-
-
-# POSITIVE
+def bimcv_covid19_positive_subjects(root: LikePath) -> tp.List[Subject]:
+    return BIMCVCOVID19positive.subjects(root)
 
 
 def bimcv_covid19_positive_sessions(root: LikePath) -> tp.List[Session]:
-    "processing covid19_posi_sessions_tsv.tar.gz"
-
-    return bimcv_covid19_sessions(path=Path(root) / "covid19_posi_sessions_tsv.tar.gz")
+    return BIMCVCOVID19positive.sessions(root)
 
 
 # NEGATIVE
 
 
+def download_bimcv_covid19_negative(root: LikePath):
+    return BIMCVCOVID19negative.download(root)
+
+
+def bimcv_covid19_negative_subjects(root: LikePath) -> tp.List[Subject]:
+    return BIMCVCOVID19negative.subjects(root)
+
+
 def bimcv_covid19_negative_sessions(root: LikePath) -> tp.List[Session]:
-    "processing covid19_neg_sessions_tsv.tar.gz"
-    return bimcv_covid19_sessions(path=Path(root) / "covid19_neg_sessions_tsv.tar.gz")
+    return BIMCVCOVID19negative.sessions(root)
 
 
 def iterate_sessions_bimcv_covid19_positive(root: LikePath) -> tp.Iterator[Path]:
