@@ -4,7 +4,6 @@ __all__ = [
 ]
 
 import contextlib
-import functools as ft
 import itertools as it
 import logging
 import operator as op
@@ -32,26 +31,20 @@ from .webdav import webdav_download_all
 
 
 class BIMCVCOVID19Root(DatasetRoot):
-    def __init__(self, root: LikePath):
-        super().__init__(root)
-        self._prepared_series = self.prepared / "series"
-        self._prepared_sessions = self.prepared / "sessions"
-        self._prepared_subjects = self.prepared / "subjects"
-
     @property
     def prepared_series(self) -> Path:
-        return self._prepared_series
+        return self.prepared / "series"
 
     @property
     def prepared_sessions(self) -> Path:
-        return self._prepared_sessions
+        return self.prepared / "sessions"
 
     @property
     def prepared_subjects(self) -> Path:
-        return self._prepared_subjects
+        return self.prepared / "subjects"
 
 
-class BIMCVCOVID19Data:
+class BIMCVCOVID19Data(BIMCVCOVID19Root):
     webdav_hostname: str
     webdav_login: str
     webdav_password: str
@@ -67,66 +60,42 @@ class BIMCVCOVID19Data:
     labels_tarfile_name: str
     labels_tarfile_subpath: str
 
-    def __init__(self, root: LikePath):
-        root = Path(root).absolute()
-        apply_default_root = [
-            "download",
-            "subjects",
-            "sessions",
-            "tests",
-            "labels",
-            "sessions_iter",
-            "series_iter",
-            "prepare",
-        ]
-        for method in apply_default_root:
-            func_ = getattr(self, method)
-            func = ft.partial(func_, root=root)
-            setattr(self, method, func)
-
-    @classmethod
-    def download(cls, root: LikePath):
+    def download(self):
         return webdav_download_all(
-            root=BIMCVCOVID19Root(root).original,
-            webdav_hostname=cls.webdav_hostname,
-            webdav_login=cls.webdav_login,
-            webdav_password=cls.webdav_password,
+            root=self.original,
+            webdav_hostname=self.webdav_hostname,
+            webdav_login=self.webdav_login,
+            webdav_password=self.webdav_password,
         )
 
-    @classmethod
-    def subjects(cls, root: LikePath) -> tp.List[Subject]:
-        return cls._subjects(
-            path=BIMCVCOVID19Root(root).original / cls.subjects_tarfile_name,
-            subpath=cls.subjects_tarfile_subpath,
+    def subjects(self) -> tp.List[Subject]:
+        return self._subjects(
+            path=self.original / self.subjects_tarfile_name,
+            subpath=self.subjects_tarfile_subpath,
         )
 
-    @classmethod
-    def sessions(cls, root: LikePath) -> tp.List[Session]:
-        return cls._sessions(
-            path=BIMCVCOVID19Root(root).original / cls.sessions_tarfile_name
+    def sessions(self) -> tp.List[Session]:
+        return self._sessions(
+            path=self.original / self.sessions_tarfile_name
         )
 
-    @classmethod
-    def tests(cls, root: LikePath) -> tp.Dict[str, tp.List[Test]]:
+    def tests(self) -> tp.Dict[str, tp.List[Test]]:
         with contextlib.suppress(FileNotFoundError):
-            return cls._tests(
-                path=BIMCVCOVID19Root(root).original / cls.tests_tarfile_name,
-                subpath=cls.tests_tarfile_subpath,
+            return self._tests(
+                path=self.original / self.tests_tarfile_name,
+                subpath=self.tests_tarfile_subpath,
             )
         return {}
 
-    @classmethod
-    def labels(cls, root: LikePath) -> tp.Dict[str, Labels]:
-        return cls._labels(
-            path=BIMCVCOVID19Root(root).original / cls.labels_tarfile_name,
-            subpath=cls.labels_tarfile_subpath,
+    def labels(self) -> tp.Dict[str, Labels]:
+        return self._labels(
+            path=self.original / self.labels_tarfile_name,
+            subpath=self.labels_tarfile_subpath,
         )
 
-    @classmethod
-    def sessions_iter(cls, root: LikePath) -> tp.Iterator[Path]:
+    def sessions_iter(self) -> tp.Iterator[Path]:
         """Unpacks the next session into a temporary folder and returns the path to it"""
-        root = BIMCVCOVID19Root(root).original
-        part_paths = sorted(list(root.glob("*part*.tar.gz")))
+        part_paths = sorted(list(self.original.glob("*part*.tar.gz")))
         with TemporaryDirectory() as temp_root:
             temp_root_ = Path(temp_root)
             for part_path in part_paths:
@@ -185,9 +154,8 @@ class BIMCVCOVID19Data:
                     shutil.rmtree(session_root)
                 part_file.close()
 
-    @classmethod
-    def series_iter(cls, root: LikePath) -> tp.Iterator[Series]:
-        session_dirs = cls.sessions_iter(root)
+    def series_iter(self) -> tp.Iterator[Series]:
+        session_dirs = self.sessions_iter()
         for session_root in session_dirs:
             for series_raw_path in _group_series_files_by_name(session_root):
                 logging.info("Series %s reading", series_raw_path.uid)
@@ -325,24 +293,22 @@ class BIMCVCOVID19Data:
             for row in dataframe.itertuples()
         }
 
-    @classmethod
-    def prepare(cls, root: LikePath):
+    def prepare(self):
         """
         Extracts the dataset into a new folder structure.
         Makes minor changes to text data.
         """
-        dsroot = BIMCVCOVID19Root(root)
-        assert dsroot.original.exists()
-        logging.info("Source directory: %s", str(dsroot.original))
-        logging.info("Destination directory: %s", str(dsroot.prepared))
+        assert self.original.exists()
+        logging.info("Source directory: %s", str(self.original))
+        logging.info("Destination directory: %s", str(self.prepared))
 
         logging.info("Extracting information about subjects")
-        subjects: tp.List[Subject] = cls.subjects(root)
+        subjects: tp.List[Subject] = self.subjects()
 
         logging.info("Extracting information about sessions")
-        sessions: tp.List[Session] = cls.sessions(root)
+        sessions: tp.List[Session] = self.sessions()
 
-        series_iterator = cls.series_iter(root)
+        series_iterator = self.series_iter()
         assert set(map(op.attrgetter("uid"), subjects)) == set(
             map(op.attrgetter("subject_id"), sessions)
         )
@@ -350,17 +316,17 @@ class BIMCVCOVID19Data:
         sessions_map = {ses.uid: ses for ses in sessions}
 
         logging.info("Extracting information about COVID test results")
-        tests: tp.Dict[str, tp.List[Test]] = cls.tests(root)
+        tests: tp.Dict[str, tp.List[Test]] = self.tests()
 
         logging.info("Extracting session semantic markup")
-        labels: tp.Dict[str, Labels] = cls.labels(root)
+        labels: tp.Dict[str, Labels] = self.labels()
 
         logging.info("Creating root directories")
         for directory in [
-            dsroot.prepared,
-            dsroot.prepared_series,
-            dsroot.prepared_sessions,
-            dsroot.prepared_subjects,
+            self.prepared,
+            self.prepared_series,
+            self.prepared_sessions,
+            self.prepared_subjects,
         ]:
             directory.mkdir(parents=False, exist_ok=True)
 
@@ -380,7 +346,7 @@ class BIMCVCOVID19Data:
             if series.image is None:
                 continue
 
-            series.save(dsroot.prepared_series / series.uid)
+            series.save(self.prepared_series / series.uid)
 
             sessions_map[series.session_id].series_modalities.add(series.modality)
             sessions_map[series.session_id].series_ids.add(series.uid)
@@ -399,7 +365,7 @@ class BIMCVCOVID19Data:
                 continue
 
             session.labels = labels.get(session.uid)
-            session.save(dsroot.prepared_sessions / session.uid)
+            session.save(self.prepared_sessions / session.uid)
 
             subjects_map[session.subject_id].sessions_ids.add(session.uid)
 
@@ -415,7 +381,7 @@ class BIMCVCOVID19Data:
                 continue
 
             subject.tests = tests.get(subject.uid)
-            subject.save(dsroot.prepared_subjects / subject.uid)
+            subject.save(self.prepared_subjects / subject.uid)
 
 
 class BIMCVCOVID19positiveData(BIMCVCOVID19Data):
