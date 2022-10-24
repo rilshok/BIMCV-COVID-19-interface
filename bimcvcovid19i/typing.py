@@ -60,8 +60,8 @@ class Subject:
     age: tp.Optional[float]
     gender: tp.Optional[str]
     tests: tp.Optional[tp.List[Test]]
-    series_ids: tp.List[str]
-    sessions_ids: tp.List[str]
+    series_ids: tp.Set[str]
+    sessions_ids: tp.Set[str]
 
     def save(self, root: LikePath):
         root = Path(root)
@@ -103,8 +103,8 @@ class Session:
     subject_id: str
     study_date: tp.Optional[str]
     medical_evaluation: tp.Optional[str]
-    series_modalities: tp.List[str]
-    series_ids: tp.List[str]
+    series_modalities: tp.Set[str]
+    series_ids: tp.Set[str]
     labels: tp.Optional[Labels]
 
     def save(self, root: LikePath):

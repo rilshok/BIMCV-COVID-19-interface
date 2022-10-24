@@ -144,8 +144,8 @@ class BIMCVCOVID19:
                 modalities=modalities,
                 age=age,
                 gender=gender,
-                series_ids=[],
-                sessions_ids=[],
+                series_ids=set(),
+                sessions_ids=set(),
                 tests=None,
             )
             subjects.append(subject)
@@ -188,8 +188,8 @@ class BIMCVCOVID19:
                     subject_id=subject_id,
                     study_date=study_date,
                     medical_evaluation=medical_evaluation,
-                    series_modalities=[],
-                    series_ids=[],
+                    series_modalities=set(),
+                    series_ids=set(),
                     labels=None,
                 )
                 sessions.append(session)
