@@ -75,59 +75,58 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
             temp_root_ = Path(temp_root)
             for part_path in part_paths:
                 logging.info("Start processing tar file: %s", part_path.name)
-                part_file = tarfile.open(part_path)
-                members = part_file.getmembers()
+                with tarfile.open(part_path) as part_file:
+                    members = part_file.getmembers()
 
-                # extracting root paths for sessions inside an archive
-                sessions_root_paths = {}
-                for member in members:
-                    member_path = member.name
-                    member_path_split = member_path.split("/")
-                    if not member_path_split[-1].startswith("ses-"):
-                        continue
-                    if not member_path_split[-2].startswith("sub-"):
-                        continue
-                    session_id = member_path_split[-1]
-                    assert member.isdir()
-                    sessions_root_paths[session_id] = member_path
+                    # extracting root paths for sessions inside an archive
+                    sessions_root_paths = {}
+                    for member in members:
+                        member_path = member.name
+                        member_path_split = member_path.split("/")
+                        if not member_path_split[-1].startswith("ses-"):
+                            continue
+                        if not member_path_split[-2].startswith("sub-"):
+                            continue
+                        session_id = member_path_split[-1]
+                        assert member.isdir()
+                        sessions_root_paths[session_id] = member_path
 
-                # extract paths to each file inside an archive.
-                # distribution of paths by sessions
+                    # extract paths to each file inside an archive.
+                    # distribution of paths by sessions
 
-                sessions_element_paths: tp.Dict[str, tp.List[str]] = {
-                    uid: [] for uid in sessions_root_paths
-                }
+                    sessions_element_paths: tp.Dict[str, tp.List[str]] = {
+                        uid: [] for uid in sessions_root_paths
+                    }
 
-                for member in members:
-                    if not member.isfile():
-                        continue
-                    member_path = member.name
+                    for member in members:
+                        if not member.isfile():
+                            continue
+                        member_path = member.name
 
-                    for uid, sessions_root in sessions_root_paths.items():
-                        if member_path.startswith(sessions_root):
-                            sessions_element_paths[uid].append(member_path)
-                            break
-                    else:
-                        raise AssertionError
+                        for uid, sessions_root in sessions_root_paths.items():
+                            if member_path.startswith(sessions_root):
+                                sessions_element_paths[uid].append(member_path)
+                                break
+                        else:
+                            raise AssertionError
 
-                for session_id, part_file_paths in sessions_element_paths.items():
-                    logging.info("Extracting session %s files", session_id)
-                    session_root = temp_root_ / session_id
-                    session_root.mkdir()
-                    part_file_session_root = Path(sessions_root_paths[session_id])
-                    for path in part_file_paths:
-                        file_path = session_root / Path(path).relative_to(
-                            part_file_session_root
-                        )
-                        file_path.parent.mkdir(parents=True, exist_ok=True)
+                    for session_id, part_file_paths in sessions_element_paths.items():
+                        logging.info("Extracting session %s files", session_id)
+                        session_root = temp_root_ / session_id
+                        session_root.mkdir()
+                        part_file_session_root = Path(sessions_root_paths[session_id])
+                        for path in part_file_paths:
+                            file_path = session_root / Path(path).relative_to(
+                                part_file_session_root
+                            )
+                            file_path.parent.mkdir(parents=True, exist_ok=True)
 
-                        with open(file_path, "wb") as file:
-                            data = part_file.extractfile(path)
-                            assert data is not None
-                            file.write(data.read())
-                    yield session_root
-                    shutil.rmtree(session_root)
-                part_file.close()
+                            with open(file_path, "wb") as file:
+                                data = part_file.extractfile(path)
+                                assert data is not None
+                                file.write(data.read())
+                        yield session_root
+                        shutil.rmtree(session_root)
 
     def series_iter(self) -> tp.Iterator[Series]:
         session_dirs = self.sessions_iter()
