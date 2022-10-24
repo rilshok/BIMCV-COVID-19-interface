@@ -51,7 +51,7 @@ class BIMCVCOVID19Root(DatasetRoot):
         return self._prepared_subjects
 
 
-class _BIMCVCOVID19Data:
+class BIMCVCOVID19Data:
     webdav_hostname: str
     webdav_login: str
     webdav_password: str
@@ -418,7 +418,7 @@ class _BIMCVCOVID19Data:
             subject.save(dsroot.prepared_subjects / subject.uid)
 
 
-class BIMCVCOVID19positiveData(_BIMCVCOVID19Data):
+class BIMCVCOVID19positiveData(BIMCVCOVID19Data):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2"
     webdav_password = "maybeempty"
@@ -435,7 +435,7 @@ class BIMCVCOVID19positiveData(_BIMCVCOVID19Data):
     labels_tarfile_subpath = "covid19_posi/derivatives/labels/labels_covid_posi.tsv"
 
 
-class BIMCVCOVID19negativeData(_BIMCVCOVID19Data):
+class BIMCVCOVID19negativeData(BIMCVCOVID19Data):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2-Negative"
     webdav_password = "maybeempty"
