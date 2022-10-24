@@ -68,31 +68,6 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
             webdav_password=self.webdav_password,
         )
 
-    def subjects(self) -> tp.List[Subject]:
-        return self._subjects(
-            path=self.original / self.subjects_tarfile_name,
-            subpath=self.subjects_tarfile_subpath,
-        )
-
-    def sessions(self) -> tp.List[Session]:
-        return self._sessions(
-            path=self.original / self.sessions_tarfile_name
-        )
-
-    def tests(self) -> tp.Dict[str, tp.List[Test]]:
-        with contextlib.suppress(FileNotFoundError):
-            return self._tests(
-                path=self.original / self.tests_tarfile_name,
-                subpath=self.tests_tarfile_subpath,
-            )
-        return {}
-
-    def labels(self) -> tp.Dict[str, Labels]:
-        return self._labels(
-            path=self.original / self.labels_tarfile_name,
-            subpath=self.labels_tarfile_subpath,
-        )
-
     def sessions_iter(self) -> tp.Iterator[Path]:
         """Unpacks the next session into a temporary folder and returns the path to it"""
         part_paths = sorted(list(self.original.glob("*part*.tar.gz")))
@@ -161,8 +136,10 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
                 logging.info("Series %s reading", series_raw_path.uid)
                 yield series_raw_path.read_item()
 
-    @staticmethod
-    def _subjects(path: LikePath, subpath: LikePath) -> tp.List[Subject]:
+    def subjects(self) -> tp.List[Subject]:
+        path = self.original / self.subjects_tarfile_name
+        subpath = self.subjects_tarfile_subpath
+
         with tools.open_from_tar(path, subpath) as file:
             dataframe = pd.read_csv(file, sep="\t")
 
@@ -201,11 +178,11 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
             subjects.append(subject)
         return subjects
 
-    @staticmethod
-    def _sessions(path: LikePath) -> tp.List[Session]:
+    def sessions(self) -> tp.List[Session]:
         """read sessions from *sessions_tsv.tar.gz file"""
-        path = Path(path)
+        path = self.original / self.sessions_tarfile_name
         sessions = []
+        # TODO: context
         all_sessions_file = tarfile.open(path)
         for sesions_file_member in all_sessions_file.getmembers():
             subject_id = sesions_file_member.name.split("/")[1]
@@ -246,9 +223,11 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
         all_sessions_file.close()
         return sessions
 
-    @staticmethod
-    def _tests(path: LikePath, subpath: LikePath) -> tp.Dict[str, tp.List[Test]]:
+    def tests(self) -> tp.Dict[str, tp.List[Test]]:
         """Subject grouped tests (PCR, ACT, etc.)"""
+        path = self.original / self.tests_tarfile_name
+        subpath = self.tests_tarfile_subpath
+
         with tools.open_from_tar(path, subpath) as file:
             dataframe = pd.read_csv(file, sep="\t")
 
@@ -273,8 +252,10 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
             for subject_id, group in it.groupby(all_tests, op.attrgetter("subject_id"))
         }
 
-    @staticmethod
-    def _labels(path: LikePath, subpath: LikePath) -> tp.Dict[str, Labels]:
+    def labels(self) -> tp.Dict[str, Labels]:
+        path = self.original / self.labels_tarfile_name
+        subpath = self.labels_tarfile_subpath
+
         with tools.open_from_tar(path, subpath) as file:
             dataframe = pd.read_csv(file, sep="\t")
         return {
@@ -411,12 +392,11 @@ class BIMCVCOVID19negativeData(BIMCVCOVID19Data):
 
     sessions_tarfile_name = "covid19_neg_sessions_tsv.tar.gz"
 
-    # NOTE: it is missing from the dataset
-    tests_tarfile_name = "---"
-    tests_tarfile_subpath = "---"
-
     labels_tarfile_name = "covid19_neg_derivative.tar.gz"
     labels_tarfile_subpath = "covid19_neg/derivatives/labels/Labels_covid_NEG_JAN21.tsv"
+
+    def tests(self) -> tp.Dict[str, tp.List[Test]]:
+        return {}
 
 
 def _group_series_files_by_name(session_root: Path) -> tp.Iterator[SeriesRawPath]:
