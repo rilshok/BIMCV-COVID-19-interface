@@ -3,7 +3,6 @@ __all__ = [
     "BIMCVCOVID19negativeData",
 ]
 
-import contextlib
 import itertools as it
 import logging
 import operator as op
@@ -20,7 +19,6 @@ from . import tools
 from .typing import (
     DatasetRoot,
     Labels,
-    LikePath,
     Series,
     SeriesRawPath,
     Session,
@@ -133,7 +131,17 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
         for session_root in session_dirs:
             for series_raw_path in _group_series_files_by_name(session_root):
                 logging.info("Series %s reading", series_raw_path.uid)
-                yield series_raw_path.read_item()
+                try:
+                    yield series_raw_path.read_item()
+                except TypeError as exc:
+                    if exc.args:
+                        # NOTE: skip. This case is similar to a report containing personal data
+                        if (
+                            "Cannot cast array data from dtype([('R', 'u1'), ('G', 'u1'), ('B', 'u1')])"
+                            in exc.args[0]
+                        ):
+                            continue
+                    raise exc
 
     def subjects(self) -> tp.List[Subject]:
         path = self.original / self.subjects_tarfile_name
@@ -202,7 +210,9 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
                     else:
                         study_date = str(int(study_date))
                         assert len(study_date) == 8, study_date
-                        study_date = f"{study_date[:4]}-{study_date[4:6]}-{study_date[6:]}"
+                        study_date = (
+                            f"{study_date[:4]}-{study_date[4:6]}-{study_date[6:]}"
+                        )
 
                     medical_evaluation = tools.derepr_medical_evaluation_text(
                         medical_evaluation
