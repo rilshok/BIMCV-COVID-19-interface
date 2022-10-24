@@ -182,45 +182,43 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
         """read sessions from *sessions_tsv.tar.gz file"""
         path = self.original / self.sessions_tarfile_name
         sessions = []
-        # TODO: context
-        all_sessions_file = tarfile.open(path)
-        for sesions_file_member in all_sessions_file.getmembers():
-            subject_id = sesions_file_member.name.split("/")[1]
-            assert subject_id.startswith("sub-")
+        with tarfile.open(path) as all_sessions_file:
+            for sesions_file_member in all_sessions_file.getmembers():
+                subject_id = sesions_file_member.name.split("/")[1]
+                assert subject_id.startswith("sub-")
 
-            sesions_file = all_sessions_file.extractfile(sesions_file_member)
-            assert sesions_file is not None
-            sesions_dataframe = pd.read_csv(sesions_file, sep="\t")
+                sesions_file = all_sessions_file.extractfile(sesions_file_member)
+                assert sesions_file is not None
+                sesions_dataframe = pd.read_csv(sesions_file, sep="\t")
 
-            for sesion_row in sesions_dataframe.itertuples():
-                session_id = sesion_row.session_id
-                study_date = sesion_row.study_date
-                medical_evaluation = sesion_row.medical_evaluation
+                for sesion_row in sesions_dataframe.itertuples():
+                    session_id = sesion_row.session_id
+                    study_date = sesion_row.study_date
+                    medical_evaluation = sesion_row.medical_evaluation
 
-                assert session_id.startswith("ses-")
+                    assert session_id.startswith("ses-")
 
-                if study_date != study_date:
-                    study_date = None
-                else:
-                    study_date = str(int(study_date))
-                    assert len(study_date) == 8, study_date
-                    study_date = f"{study_date[:4]}-{study_date[4:6]}-{study_date[6:]}"
+                    if study_date != study_date:
+                        study_date = None
+                    else:
+                        study_date = str(int(study_date))
+                        assert len(study_date) == 8, study_date
+                        study_date = f"{study_date[:4]}-{study_date[4:6]}-{study_date[6:]}"
 
-                medical_evaluation = tools.derepr_medical_evaluation_text(
-                    medical_evaluation
-                )
+                    medical_evaluation = tools.derepr_medical_evaluation_text(
+                        medical_evaluation
+                    )
 
-                session = Session(
-                    uid=session_id,
-                    subject_id=subject_id,
-                    study_date=study_date,
-                    medical_evaluation=medical_evaluation,
-                    series_modalities=set(),
-                    series_ids=set(),
-                    labels=None,
-                )
-                sessions.append(session)
-        all_sessions_file.close()
+                    session = Session(
+                        uid=session_id,
+                        subject_id=subject_id,
+                        study_date=study_date,
+                        medical_evaluation=medical_evaluation,
+                        series_modalities=set(),
+                        series_ids=set(),
+                        labels=None,
+                    )
+                    sessions.append(session)
         return sessions
 
     def tests(self) -> tp.Dict[str, tp.List[Test]]:
