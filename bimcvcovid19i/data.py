@@ -1,3 +1,8 @@
+__all__ = [
+    "BIMCVCOVID19positiveData",
+    "BIMCVCOVID19negativeData",
+]
+
 import contextlib
 import functools as ft
 import itertools as it
@@ -27,7 +32,7 @@ from .webdav import webdav_download_all
 
 
 class BIMCVCOVID19Root(DatasetRoot):
-    def __init__(self, root):
+    def __init__(self, root: LikePath):
         super().__init__(root)
         self._prepared_series = self.prepared / "series"
         self._prepared_sessions = self.prepared / "sessions"
@@ -46,7 +51,7 @@ class BIMCVCOVID19Root(DatasetRoot):
         return self._prepared_subjects
 
 
-class BIMCVCOVID19:
+class _BIMCVCOVID19Data:
     webdav_hostname: str
     webdav_login: str
     webdav_password: str
@@ -413,7 +418,7 @@ class BIMCVCOVID19:
             subject.save(dsroot.prepared_subjects / subject.uid)
 
 
-class BIMCVCOVID19positive(BIMCVCOVID19):
+class BIMCVCOVID19positiveData(_BIMCVCOVID19Data):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2"
     webdav_password = "maybeempty"
@@ -430,7 +435,7 @@ class BIMCVCOVID19positive(BIMCVCOVID19):
     labels_tarfile_subpath = "covid19_posi/derivatives/labels/labels_covid_posi.tsv"
 
 
-class BIMCVCOVID19negative(BIMCVCOVID19):
+class BIMCVCOVID19negativeData(_BIMCVCOVID19Data):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2-Negative"
     webdav_password = "maybeempty"
@@ -487,7 +492,6 @@ def _group_series_files_by_name(session_root: Path) -> tp.Iterator[SeriesRawPath
                 meta_path = path
                 continue
             image_path = path
-
         yield SeriesRawPath(
             uid=Path(group_name).name,
             image_path=image_path,

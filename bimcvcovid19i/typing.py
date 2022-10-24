@@ -63,7 +63,6 @@ class Subject:
     series_ids: tp.Set[str]
     series_modalities: tp.Set[str]
 
-
     def save(self, root: LikePath):
         root = Path(root)
         root.mkdir(exist_ok=True, parents=False)
@@ -167,24 +166,21 @@ class SeriesRawPath:
     tags_path: tp.Optional[Path]
 
     def read_item(self) -> Series:
-        image_path = self.image_path
-        tags_path = self.tags_path
-
         image = None
         spacing = None
-        if image_path is not None:
-            if str(image_path).endswith(".png"):
-                image = tools.png2numpy(image_path)
-            elif str(image_path).endswith(".nii.gz"):
-                image = tools.nifty2numpy(image_path)
-                spacing = tools.spacing_from_nifty(image_path)
+        if self.image_path is not None:
+            if str(self.image_path).endswith(".png"):
+                image = tools.png2numpy(self.image_path)
+            elif str(self.image_path).endswith(".nii.gz"):
+                image = tools.nifty2numpy(self.image_path)
+                spacing = tools.spacing_from_nifty(self.image_path)
             else:
-                raise NotImplementedError(image_path)
+                raise NotImplementedError(self.image_path)
             image = tools.down_type(image)
 
         tags = None
         if self.tags_path is not None:
-            tags_data = deli.load(tags_path)
+            tags_data = deli.load(self.tags_path)
             tags = tools.parse_dicom_tags(tags_data)
         assert tags is None or isinstance(tags, dict)
 
