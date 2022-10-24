@@ -150,8 +150,8 @@ class Series:
             deli.save(list(map(float, self.spacing)), root / "spacing.json")
         if self.tags is not None:
             tools.save_json_gz(self.tags, root / "tags.json.gz", compression=3)
-        deli.save(self.subject_id, root / "subject.json")
-        deli.save(self.session_id, root / "session.json")
+        deli.save(self.subject_id, root / "subject_id.json")
+        deli.save(self.session_id, root / "session_id.json")
         deli.save(self.modality, root / "modality.json")
 
     @classmethod
