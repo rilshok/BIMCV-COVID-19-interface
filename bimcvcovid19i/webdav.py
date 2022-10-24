@@ -104,6 +104,7 @@ def webdav_download_all(
         )
         sha1sums.update(read_checksums(download_path / "sha1sums.txt"))
 
+    # TODO: use logging instead of tqdm?
     names_bar = tqdm(names)
     for name in names_bar:
         names_bar.set_description(f"donwloading {name:50}")
