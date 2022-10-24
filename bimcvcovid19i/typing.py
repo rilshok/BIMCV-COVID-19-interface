@@ -56,18 +56,18 @@ class Test:
 @dataclass
 class Subject:
     uid: str
-    modalities: tp.List[str]
     age: tp.Optional[float]
     gender: tp.Optional[str]
     tests: tp.Optional[tp.List[Test]]
-    series_ids: tp.Set[str]
     sessions_ids: tp.Set[str]
+    series_ids: tp.Set[str]
+    series_modalities: tp.Set[str]
+
 
     def save(self, root: LikePath):
         root = Path(root)
         root.mkdir(exist_ok=True, parents=False)
         deli.save(self.uid, root / "uid.json")
-        deli.save(self.modalities, root / "modalities.json")
         if self.age is not None and self.age == self.age:
             deli.save(self.age, root / "age.json")
         if self.gender is not None and self.gender == self.gender:
@@ -75,8 +75,9 @@ class Subject:
         if self.tests is not None:
             tests = [t.to_dict() for t in self.tests if t.subject_id == self.uid]
             deli.save(tests, root / "tests.json")
-        deli.save(self.series_ids, root / "series_ids.json")
-        deli.save(self.sessions_ids, root / "sessions_ids.json")
+        deli.save(sorted(self.sessions_ids), root / "sessions_ids.json")
+        deli.save(sorted(self.series_ids), root / "series_ids.json")
+        deli.save(sorted(self.series_modalities), root / "series_modalities.json")
 
 
 @dataclass
@@ -116,8 +117,8 @@ class Session:
             deli.save(self.study_date, root / "study_date.json")
         if self.medical_evaluation is not None and len(self.medical_evaluation) > 0:
             deli.save(self.medical_evaluation, root / "medical_evaluation.json")
-        deli.save(self.series_modalities, root / "series_modalities.json")
-        deli.save(self.series_ids, root / "series_ids.json")
+        deli.save(sorted(self.series_modalities), root / "series_modalities.json")
+        deli.save(sorted(self.series_ids), root / "series_ids.json")
         if self.labels is not None:
             deli.save(self.labels.to_dict(), root / "labels.json")
 
