@@ -22,14 +22,23 @@ LikePath = tp.Union[str, Path]
 
 
 class DatasetRoot:
-    def __init__(self, root: LikePath):
-        self._root = Path(root).absolute()
-        self._original = self._root / "original"
-        self._prepared = self._root / "prepared"
+    def __init__(
+        self,
+        root: tp.Optional[LikePath] = None,
+        original: tp.Optional[LikePath] = None,
+        prepared: tp.Optional[LikePath] = None,
+    ):
+        if root is not None:
+            self._root = Path(root).absolute()
+            self._original = self._root / "original"
+            self._prepared = self._root / "prepared"
+        if original is not None:
+            self._original = Path(original).absolute()
+        if prepared is not None:
+            self._prepared = Path(prepared).absolute()
 
-    @property
-    def root(self) -> Path:
-        return self._root
+        if any(p is None for p in [self._original, self._prepared]):
+            raise ValueError
 
     @property
     def original(self) -> Path:
