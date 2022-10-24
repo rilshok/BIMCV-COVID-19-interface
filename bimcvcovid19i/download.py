@@ -70,6 +70,9 @@ class BIMCVCOVID19:
             "sessions",
             "tests",
             "labels",
+            "sessions_iter",
+            "series_iter",
+            "prepare",
         ]
         for method in apply_default_root:
             func_ = getattr(self, method)
