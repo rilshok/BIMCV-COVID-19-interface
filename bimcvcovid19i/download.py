@@ -1,3 +1,4 @@
+import contextlib
 import functools as ft
 import itertools as it
 import logging
@@ -10,7 +11,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import pandas as pd  # type: ignore
-from tqdm import tqdm  # type: ignore
 
 from . import tools
 from .typing import (
@@ -100,10 +100,12 @@ class BIMCVCOVID19:
 
     @classmethod
     def tests(cls, root: LikePath) -> tp.Dict[str, tp.List[Test]]:
-        return cls._tests(
-            path=BIMCVCOVID19Root(root).original / cls.tests_tarfile_name,
-            subpath=cls.tests_tarfile_subpath,
-        )
+        with contextlib.suppress(FileNotFoundError):
+            return cls._tests(
+                path=BIMCVCOVID19Root(root).original / cls.tests_tarfile_name,
+                subpath=cls.tests_tarfile_subpath,
+            )
+        return {}
 
     @classmethod
     def labels(cls, root: LikePath) -> tp.Dict[str, Labels]:
@@ -315,6 +317,98 @@ class BIMCVCOVID19:
             for row in dataframe.itertuples()
         }
 
+    @classmethod
+    def prepare(cls, root: LikePath):
+        """
+        Extracts the dataset into a new folder structure.
+        Makes minor changes to text data.
+        """
+        dsroot = BIMCVCOVID19Root(root)
+        assert dsroot.original.exists()
+        logging.info("Source directory: %s", str(dsroot.original))
+        logging.info("Destination directory: %s", str(dsroot.prepared))
+
+        logging.info("Extracting information about subjects")
+        subjects: tp.List[Subject] = cls.subjects(root)
+
+        logging.info("Extracting information about sessions")
+        sessions: tp.List[Session] = cls.sessions(root)
+
+        series_iterator = cls.series_iter(root)
+        assert set(map(op.attrgetter("uid"), subjects)) == set(
+            map(op.attrgetter("subject_id"), sessions)
+        )
+        subjects_map = {sub.uid: sub for sub in subjects}
+        sessions_map = {ses.uid: ses for ses in sessions}
+
+        logging.info("Extracting information about COVID test results")
+        tests: tp.Dict[str, tp.List[Test]] = cls.tests(root)
+
+        logging.info("Extracting session semantic markup")
+        labels: tp.Dict[str, Labels] = cls.labels(root)
+
+        logging.info("Creating root directories")
+        for directory in [
+            dsroot.prepared,
+            dsroot.prepared_series,
+            dsroot.prepared_sessions,
+            dsroot.prepared_subjects,
+        ]:
+            directory.mkdir(parents=False, exist_ok=True)
+
+        logging.info("Start extracting sessions")
+
+        _sessions_prepared = set()
+        for series in series_iterator:
+            _sessions_prepared.add(series.session_id)
+            logging.info(
+                "Processing series %s from session %s. Progress: %s/%s",
+                series.uid,
+                series.session_id,
+                len(_sessions_prepared),
+                len(sessions),
+            )
+
+            if series.image is None:
+                continue
+
+            series.save(dsroot.prepared_series / series.uid)
+
+            sessions_map[series.session_id].series_modalities.add(series.modality)
+            sessions_map[series.session_id].series_ids.add(series.uid)
+            subjects_map[series.subject_id].series_modalities.add(series.modality)
+            subjects_map[series.subject_id].series_ids.add(series.uid)
+
+        for i, session in enumerate(sessions_map.values()):
+            logging.info(
+                "%s series metadata processing. Progress: %s/%s",
+                session.uid,
+                i,
+                len(sessions),
+            )
+
+            if not session.series_ids:
+                continue
+
+            session.labels = labels.get(session.uid)
+            session.save(dsroot.prepared_sessions / session.uid)
+
+            subjects_map[session.subject_id].sessions_ids.add(session.uid)
+
+        for i, subject in enumerate(subjects_map.values()):
+            logging.info(
+                "%s subject metadata processing. Progress: %s/%s",
+                subject.uid,
+                i,
+                len(subjects),
+            )
+
+            if not subject.series_ids:
+                continue
+
+            subject.tests = tests.get(subject.uid)
+            subject.save(dsroot.prepared_subjects / subject.uid)
+
 
 class BIMCVCOVID19positive(BIMCVCOVID19):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
@@ -343,6 +437,7 @@ class BIMCVCOVID19negative(BIMCVCOVID19):
 
     sessions_tarfile_name = "covid19_neg_sessions_tsv.tar.gz"
 
+    # NOTE: it is missing from the dataset
     tests_tarfile_name = "---"
     tests_tarfile_subpath = "---"
 
@@ -359,104 +454,11 @@ def download_bimcv_covid19_negative(root: LikePath):
 
 
 def extract_bimcv_covid19_positive(root: LikePath):
-    dsroot = BIMCVCOVID19Root(root)
-    assert dsroot.original.exists()
-    logging.info("Source directory: %s", str(dsroot.original))
-    logging.info("Destination directory: %s", str(dsroot.prepared))
-
-    logging.info("Extracting information about subjects")
-    subjects: tp.List[Subject] = BIMCVCOVID19positive.subjects(root)
-
-    logging.info("Extracting information about sessions")
-    sessions: tp.List[Session] = BIMCVCOVID19positive.sessions(root)
-
-    series_iterator = BIMCVCOVID19positive.series_iter(root)
-    assert set(map(op.attrgetter("uid"), subjects)) == set(
-        map(op.attrgetter("subject_id"), sessions)
-    )
-    subjects_map = {sub.uid: sub for sub in subjects}
-    sessions_map = {ses.uid: ses for ses in sessions}
-
-    logging.info("Extracting information about COVID test results")
-    tests: tp.Dict[str, tp.List[Test]] = BIMCVCOVID19positive.tests(root)
-
-    logging.info("Extracting session semantic markup")
-    labels: tp.Dict[str, Labels] = BIMCVCOVID19positive.labels(root)
-
-    logging.info("Creating root directories")
-    for directory in [
-        dsroot.prepared,
-        dsroot.prepared_series,
-        dsroot.prepared_sessions,
-        dsroot.prepared_subjects,
-    ]:
-        directory.mkdir(parents=False, exist_ok=True)
-
-    logging.info("Start extracting sessions")
-
-    _sessions_prepared = set()
-    for series in series_iterator:
-        _sessions_prepared.add(series.session_id)
-        logging.info(
-            "Processing series %s from session %s. Progress: %s/%s",
-            series.uid,
-            series.session_id,
-            len(_sessions_prepared),
-            len(sessions),
-        )
-
-        if series.image is None:
-            continue
-
-        series.save(dsroot.prepared_series / series.uid)
-
-        sessions_map[series.session_id].series_modalities.add(series.modality)
-        sessions_map[series.session_id].series_ids.add(series.uid)
-        subjects_map[series.subject_id].series_modalities.add(series.modality)
-        subjects_map[series.subject_id].series_ids.add(series.uid)
-
-    for i, session in enumerate(sessions_map.values()):
-        logging.info(
-            "%s series metadata processing. Progress: %s/%s",
-            session.uid,
-            i,
-            len(sessions),
-        )
-
-        if not session.series_ids:
-            continue
-
-        session.labels = labels.get(session.uid)
-        session.save(dsroot.prepared_sessions / session.uid)
-
-        subjects_map[session.subject_id].sessions_ids.add(session.uid)
-
-    for i, subject in enumerate(subjects_map.values()):
-        logging.info(
-            "%s subject metadata processing. Progress: %s/%s",
-            subject.uid,
-            i,
-            len(subjects),
-        )
-
-        if not subject.series_ids:
-            continue
-
-        subject.tests = tests.get(subject.uid)
-        subject.save(dsroot.prepared_subjects / subject.uid)
+    return BIMCVCOVID19positive.prepare(root)
 
 
 def extract_bimcv_covid19_negative(root: LikePath):
-    dsroot = BIMCVCOVID19Root(root)
-    assert dsroot.original.exists()
-    logging.info("Source directory: %s", str(dsroot.original))
-    logging.info("Destination directory: %s", str(dsroot.prepared))
-
-    logging.info("Extracting information about subjects")
-    subjects = BIMCVCOVID19negative.subjects(root)
-
-    logging.info("Extracting information about sessions")
-    sessions = BIMCVCOVID19negative.sessions(root)
+    return BIMCVCOVID19negative.prepare(root)
 
 
 def _group_series_files_by_name(session_root: Path) -> tp.Iterator[SeriesRawPath]:
