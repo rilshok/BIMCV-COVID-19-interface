@@ -448,22 +448,6 @@ class BIMCVCOVID19negative(BIMCVCOVID19):
     labels_tarfile_subpath = "covid19_neg/derivatives/labels/Labels_covid_NEG_JAN21.tsv"
 
 
-def download_bimcv_covid19_positive(root: LikePath):
-    return BIMCVCOVID19positive.download(root)
-
-
-def download_bimcv_covid19_negative(root: LikePath):
-    return BIMCVCOVID19negative.download(root)
-
-
-def extract_bimcv_covid19_positive(root: LikePath):
-    return BIMCVCOVID19positive.prepare(root)
-
-
-def extract_bimcv_covid19_negative(root: LikePath):
-    return BIMCVCOVID19negative.prepare(root)
-
-
 def _group_series_files_by_name(session_root: Path) -> tp.Iterator[SeriesRawPath]:
     paths = list(session_root.rglob("*"))
     groups = defaultdict(list)
