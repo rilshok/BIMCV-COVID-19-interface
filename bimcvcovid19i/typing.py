@@ -190,6 +190,7 @@ class SeriesRawPath:
         tags = None
         if self.tags_path is not None:
             tags_data = deli.load(self.tags_path)
+            assert isinstance(tags_data, dict)
             tags = tools.parse_dicom_tags(tags_data)
         assert tags is None or isinstance(tags, dict)
 
