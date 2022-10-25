@@ -24,6 +24,7 @@ from .typing import (
     Session,
     Subject,
     Test,
+    EmptyFileError,
 )
 from .webdav import webdav_download_all
 
@@ -142,6 +143,8 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
                         ):
                             continue
                     raise exc
+                except EmptyFileError:
+                    continue
 
     def subjects(self) -> tp.List[Subject]:
         path = self.original / self.subjects_tarfile_name

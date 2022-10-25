@@ -168,6 +168,10 @@ class Series:
         raise NotImplementedError
 
 
+class EmptyFileError(RuntimeError):
+    pass
+
+
 @dataclass
 class SeriesRawPath:
     uid: str
@@ -178,13 +182,19 @@ class SeriesRawPath:
         image = None
         spacing = None
         if self.image_path is not None:
-            if str(self.image_path).endswith(".png"):
-                image = tools.png2numpy(self.image_path)
-            elif str(self.image_path).endswith(".nii.gz"):
-                image = tools.nifty2numpy(self.image_path)
-                spacing = tools.spacing_from_nifty(self.image_path)
-            else:
-                raise NotImplementedError(self.image_path)
+            try:
+                if str(self.image_path).endswith(".png"):
+                    image = tools.png2numpy(self.image_path)
+                elif str(self.image_path).endswith(".nii.gz"):
+                    image = tools.nifty2numpy(self.image_path)
+                    spacing = tools.spacing_from_nifty(self.image_path)
+                else:
+                    raise NotImplementedError(self.image_path)
+            except RuntimeError as exc:
+                with open(self.image_path, "rb") as file:
+                    if file.read() == b"":
+                        raise EmptyFileError from exc
+                raise exc
             image = tools.down_type(image)
 
         tags = None
