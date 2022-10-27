@@ -15,4 +15,4 @@ pip install bimcvcovid19i
 |Dataset               |Original|Prepered|Total|
 |----------------------|:------:|:------:|:---:|
 |BIMCV COVID19 positive|    390G|    408G| 797G|
-|BIMCV COVID19 negative|    469G|        |     |
+|BIMCV COVID19 negative|    469G|    480G| 948G|
