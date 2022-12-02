@@ -8,6 +8,8 @@ import contextlib
 import numpy as np
 from scipy.ndimage import maximum_filter, minimum_filter
 
+from .assets import mapping_bimcv_covid19_ct_rotate_transforms
+
 
 def assert_ndim(data, dim):
     if data.ndim != dim:
@@ -148,3 +150,13 @@ def _blank_and_regularity_filter(image):
 
 def clean_ct_image(image):
     return _clean_3dimage(image, _blank_and_regularity_filter)
+
+
+def process_ct_image(uid, image, spacing):
+    transform_type = mapping_bimcv_covid19_ct_rotate_transforms().get(uid)
+    if transform_type:
+        image, spacing = rotate_ct_transform(
+            image=image, spacing=spacing, transform_type=transform_type
+        )
+    image = clean_ct_image(image)
+    return image, spacing
