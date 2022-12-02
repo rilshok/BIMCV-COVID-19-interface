@@ -6,3 +6,4 @@ deli
 tqdm
 pandas
 pydicom
+scipy
