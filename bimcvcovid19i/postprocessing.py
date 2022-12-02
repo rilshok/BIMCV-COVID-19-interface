@@ -153,6 +153,8 @@ def clean_ct_image(image):
 
 
 def process_ct_image(uid, image, spacing):
+    if not uid.endswith("ct"):
+        raise ValueError("CT image identifier was expected")
     transform_type = mapping_bimcv_covid19_ct_rotate_transforms().get(uid)
     if transform_type:
         image, spacing = rotate_ct_transform(
