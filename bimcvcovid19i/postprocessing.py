@@ -66,7 +66,7 @@ class RotateCTTransformType5(RotateCTTransform):
         return spacing[1], spacing[0], spacing[2]
 
 
-def rotate_ct_transform(image, spacing, transform_type: str):
+def get_rotate_ct_transform(transform_type: str) -> RotateCTTransform:
     return dict(
         type_0=RotateCTTransformType0,
         type_1=RotateCTTransformType1,
@@ -74,4 +74,8 @@ def rotate_ct_transform(image, spacing, transform_type: str):
         type_3=RotateCTTransformType3,
         type_4=RotateCTTransformType4,
         type_5=RotateCTTransformType5,
-    )[transform_type]()(image, spacing)
+    )[transform_type]()
+
+
+def rotate_ct_transform(image, spacing, transform_type: str):
+    return get_rotate_ct_transform(transform_type)(image, spacing)
