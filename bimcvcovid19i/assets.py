@@ -16,9 +16,8 @@ def mapping_bimcv_covid19_negative_ct_rotate_transforms() -> Dict[str, str]:
 
 
 def mapping_bimcv_covid19_positive_ct_rotate_transforms() -> Dict[str, str]:
-    return {}
-    # asset = load_asset("bimcv-covid19-positive-ct-rotate-transforms.csv")
-    # return {row.series_id: row.transform_type for row in asset.itertuples()}
+    asset = load_asset("bimcv-covid19-positive-ct-rotate-transforms.csv")
+    return {row.series_id: row.transform_type for row in asset.itertuples()}
 
 
 @functools.lru_cache
