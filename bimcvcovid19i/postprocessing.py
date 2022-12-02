@@ -4,7 +4,7 @@ __all__ = [
 ]
 
 import contextlib
-from typing import Tuple
+from typing import Tuple, Callable
 
 import numpy as np
 from scipy.ndimage import maximum_filter, minimum_filter
@@ -97,7 +97,7 @@ def rotate_ct_transform(image: Image, spacing: Spacing, transform_type: str):
     return get_rotate_ct_transform(transform_type)(image, spacing)
 
 
-def _clean_3dimage(image: Image, filter_fn):
+def _clean_ct_image(image: Image, filter_fn: Callable[[Image], bool]):
     assert_ndim(image, 3)
     skip = slice(None)
     first = slice(1, None)
@@ -153,7 +153,7 @@ def _blank_and_regularity_filter(image: Image):
 
 
 def clean_ct_image(image: Image):
-    return _clean_3dimage(image, _blank_and_regularity_filter)
+    return _clean_ct_image(image, _blank_and_regularity_filter)
 
 
 def process_ct_image(series_id: str, image: Image, spacing: Spacing):
