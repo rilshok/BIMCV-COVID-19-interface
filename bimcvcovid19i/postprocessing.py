@@ -1,3 +1,7 @@
+__all__ = [
+    "rotate_ct_transform",
+]
+
 import numpy as np
 
 
@@ -60,3 +64,14 @@ class RotateCTTransformType5(RotateCTTransform):
 
     def transform_spacing(self, spacing):
         return spacing[1], spacing[0], spacing[2]
+
+
+def rotate_ct_transform(image, spacing, transform_type: str):
+    return dict(
+        type_0=RotateCTTransformType0,
+        type_1=RotateCTTransformType1,
+        type_2=RotateCTTransformType2,
+        type_3=RotateCTTransformType3,
+        type_4=RotateCTTransformType4,
+        type_5=RotateCTTransformType5,
+    )[transform_type]()(image, spacing)
