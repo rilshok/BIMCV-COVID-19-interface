@@ -1,6 +1,7 @@
 __all__ = [
     "rotate_ct_transform",
     "clean_ct_image",
+    "process_ct_image",
 ]
 
 import contextlib
