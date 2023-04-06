@@ -394,7 +394,9 @@ class BIMCVCOVID19positiveData_12(BIMCVCOVID19Data):
 
 
 class BIMCVCOVID19positiveData_123(BIMCVCOVID19Data):
+    webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2_3"
+    webdav_password = "maybeempty"
     # TODO: maybe bug
 
 
