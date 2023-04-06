@@ -1,6 +1,7 @@
 __all__ = [
-    "BIMCVCOVID19positiveData",
-    "BIMCVCOVID19negativeData",
+    "BIMCVCOVID19positiveData_12",
+    "BIMCVCOVID19positiveData_123",
+    "BIMCVCOVID19negativeData_12",
 ]
 
 import itertools as it
@@ -375,7 +376,7 @@ class BIMCVCOVID19Data(BIMCVCOVID19Root):
             subject.save(self.prepared_subjects / subject.uid)
 
 
-class BIMCVCOVID19positiveData(BIMCVCOVID19Data):
+class BIMCVCOVID19positiveData_12(BIMCVCOVID19Data):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2"
     webdav_password = "maybeempty"
@@ -392,7 +393,12 @@ class BIMCVCOVID19positiveData(BIMCVCOVID19Data):
     labels_tarfile_subpath = "covid19_posi/derivatives/labels/labels_covid_posi.tsv"
 
 
-class BIMCVCOVID19negativeData(BIMCVCOVID19Data):
+class BIMCVCOVID19positiveData_123(BIMCVCOVID19Data):
+    webdav_login = "BIMCV-COVID19-cIter_1_2_3"
+    # TODO: maybe bug
+
+
+class BIMCVCOVID19negativeData_12(BIMCVCOVID19Data):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2-Negative"
     webdav_password = "maybeempty"
