@@ -94,15 +94,20 @@ def webdav_download_all(
     if "webdav" in names:
         names.remove("webdav")
 
+    sha1sums_file_name = "sha1sums.txt"
+    if sha1sums_file_name not in names:
+        sha1sums_file_name = "sha1sum.txt"
+
     sha1sums = {}
-    if "sha1sums.txt" in names:
-        names.remove("sha1sums.txt")
+
+    if sha1sums_file_name in names:
+        names.remove(sha1sums_file_name)
         webdav_download_file(
             client=client,
-            remote_path="sha1sums.txt",
-            local_path=download_path / "sha1sums.txt",
+            remote_path=sha1sums_file_name,
+            local_path=download_path / sha1sums_file_name,
         )
-        sha1sums.update(read_checksums(download_path / "sha1sums.txt"))
+        sha1sums.update(read_checksums(download_path / sha1sums_file_name))
 
     # TODO: use logging instead of tqdm?
     names_bar = tqdm(names)
@@ -125,5 +130,5 @@ def webdav_download_all(
             #     pass
         else:
             warnings.warn(
-                f"file '{name}' is listed in sha1sums.txt but has not been downloaded"
+                f"file '{name}' is listed in {sha1sums_file_name} but has not been downloaded"
             )
