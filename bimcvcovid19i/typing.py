@@ -153,7 +153,7 @@ class Series:
         root.mkdir(exist_ok=True, parents=False)
         deli.save(self.uid, root / "uid.json")
         if self.image is not None:
-            deli.save(self.image, root / "image.npy.gz", compression=3, timestamp=0)
+            tools.save_numpy(self.image, root / "image.npy.gz", compression=3, timestamp=0)
             deli.save(self.image.shape, root / "shape.json")
         if self.spacing is not None:
             deli.save(list(map(float, self.spacing)), root / "spacing.json")

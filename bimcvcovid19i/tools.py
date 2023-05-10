@@ -18,6 +18,8 @@ __all__ = [
     "parse_dicom_tags",
     "derepr_strings_list",
     "open_from_tar",
+    "save_numpy",
+    "load_numpy",
 ]
 
 import contextlib
@@ -26,7 +28,9 @@ import itertools as it
 import json
 import tarfile
 import typing as tp
+from gzip import GzipFile
 from pathlib import Path
+from typing import Optional
 
 import nibabel as nib  # type: ignore
 import numpy as np
@@ -200,3 +204,38 @@ def open_from_tar(path: LikePath, subpath: LikePath):
         member = file.extractfile(str(subpath))
         assert member is not None
         yield member
+
+
+def save_numpy(
+    value,
+    path,
+    *,
+    allow_pickle: bool = True,
+    fix_imports: bool = True,
+    compression: Optional[int] = None,
+    timestamp: Optional[int] = None,
+) -> None:
+    """A wrapper around ``np.save`` from deep_pipe."""
+    if compression is not None:
+        gzfile = GzipFile(path, "wb", compresslevel=compression, mtime=timestamp)
+        with gzfile as file:
+            return save_numpy(
+                value, file, allow_pickle=allow_pickle, fix_imports=fix_imports
+            )
+
+    np.save(path, value, allow_pickle=allow_pickle, fix_imports=fix_imports)
+
+
+def load_numpy(
+    path,
+    *,
+    allow_pickle: bool = True,
+    fix_imports: bool = True,
+    decompress: bool = False,
+):
+    """A wrapper around ``np.load`` from deep_pipe."""
+    if decompress:
+        with GzipFile(path, "rb") as file:
+            return load_numpy(file, allow_pickle=allow_pickle, fix_imports=fix_imports)
+
+    return np.load(path, allow_pickle=allow_pickle, fix_imports=fix_imports)
