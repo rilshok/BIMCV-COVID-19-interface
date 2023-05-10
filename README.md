@@ -12,7 +12,8 @@ pip install bimcvcovid19i
 
 ## System requirements
 
-|Dataset               |Original|Prepered|Total|
-|----------------------|:------:|:------:|:---:|
-|BIMCV COVID19 positive|    390G|    408G| 797G|
-|BIMCV COVID19 negative|    469G|    480G| 948G|
+|Dataset                         |Original|Prepered|Total|
+|--------------------------------|:------:|:------:|:---:|
+|BIMCV COVID19 positive cIter 12 |    390G|    408G| 797G|
+|BIMCV COVID19 negative cIter 12 |    469G|    480G| 948G|
+|BIMCV COVID19 positive cIter 123|    2.8T|      ?T|   ?T|
