@@ -397,8 +397,18 @@ class BIMCVCOVID19positiveData_123(BIMCVCOVID19Data):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
     webdav_login = "BIMCV-COVID19-cIter_1_2_3"
     webdav_password = "maybeempty"
-    # TODO: maybe bug
 
+    subjects_tarfile_name = "covid19_posi_metadata.tar.gz"
+    subjects_tarfile_subpath = "covid19_posi/participants.tsv"
+
+    sessions_tarfile_name = "covid19_posi_sessions_tsv.tar.gz"
+
+    tests_tarfile_name = "covid19_posi_derivative.tar.gz"
+    tests_tarfile_subpath = "covid19_posi/derivatives/EHR/SIL_REG_COVID_POSI_iter123.txt"
+    # TODO: covid19_posi/derivatives/EHR/ contains other *.csv files
+
+    labels_tarfile_name = "covid19_posi_derivative.tar.gz"
+    labels_tarfile_subpath = "covid19_posi/derivatives/labels/Labels_covid_123.tsv"
 
 class BIMCVCOVID19negativeData_12(BIMCVCOVID19Data):
     webdav_hostname = "https://b2drop.bsc.es/public.php/webdav"
