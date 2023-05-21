@@ -93,20 +93,20 @@ class BIMCV_COVID19(BIMCVCOVID19Root):
 
     @_none_if_not_found
     def session(self, series_id: str) -> str:
-        return load(self._series_dir(series_id) / "session.json")
+        return load(self._series_dir(series_id) / "session_id.json")
 
     @_none_if_not_found
     def subject(self, series_id: str) -> str:
-        return load(self._series_dir(series_id) / "subject.json")
+        return load(self._series_dir(series_id) / "subject_id.json")
 
     # session methods
     @_none_if_not_found
     def session_subject(self, session_id: str) -> str:
-        return load(self._session_dir(session_id) / "subject.json")
+        return load(self._session_dir(session_id) / "subject_id.json")
 
     @_none_if_not_found
     def session_series(self, session_id: str) -> List[str]:
-        return load(self._session_dir(session_id) / "series.json")
+        return load(self._session_dir(session_id) / "series_ids.json")
 
     @_none_if_not_found
     def session_date(self, session_id: str) -> Optional[str]:
@@ -119,22 +119,22 @@ class BIMCV_COVID19(BIMCVCOVID19Root):
 
     @_none_if_not_found
     def session_modalities(self, session_id: str) -> List[str]:
-        return load(self._session_dir(session_id) / "modalities.json")
+        return load(self._session_dir(session_id) / "series_modalities.json")
 
     # subject methods
 
     @_none_if_not_found
     def subject_sessions(self, subject_id: str) -> List[str]:
-        path = self._subject_dir(subject_id) / "sessions.json"
+        path = self._subject_dir(subject_id) / "sessions_ids.json"
         return load(path)
 
     @_none_if_not_found
     def subject_series(self, subject_id: str) -> List[str]:
-        return load(self._subject_dir(subject_id) / "series.json")
+        return load(self._subject_dir(subject_id) / "series_ids.json")
 
     @_none_if_not_found
     def subject_modalities(self, subject_id: str) -> List[str]:
-        return load(self._subject_dir(subject_id) / "modalities.json")
+        return load(self._subject_dir(subject_id) / "series_modalities.json")
 
     @_none_if_not_found
     def subject_age(self, subject_id: str) -> Optional[float]:
