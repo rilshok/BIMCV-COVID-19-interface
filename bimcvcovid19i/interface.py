@@ -121,10 +121,9 @@ class BIMCV_COVID19(BIMCVCOVID19Root):
     def session_modalities(self, session_id: str) -> List[str]:
         return load(self._session_dir(session_id) / "series_modalities.json")
 
-    @_none_if_not_found()
-    def session_labels(self, session_id: str) -> Dict[str, Any]
+    @_none_if_not_found
+    def session_labels(self, session_id: str) -> Dict[str, Any]:
         return load(self._session_dir(session_id) / "labels.json")
-
 
     # subject methods
 
