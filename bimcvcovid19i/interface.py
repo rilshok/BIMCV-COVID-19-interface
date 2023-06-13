@@ -1,7 +1,7 @@
 from contextlib import suppress
 from functools import lru_cache, wraps
 from pathlib import Path
-from typing import Any, Callable, Optional, Tuple, List
+from typing import Any, Callable, Optional, Tuple, List, Dict
 
 import numpy as np
 from deli import load  # type: ignore
@@ -120,6 +120,11 @@ class BIMCV_COVID19(BIMCVCOVID19Root):
     @_none_if_not_found
     def session_modalities(self, session_id: str) -> List[str]:
         return load(self._session_dir(session_id) / "series_modalities.json")
+
+    @_none_if_not_found()
+    def session_labels(self, session_id: str) -> Dict[str, Any]
+        return load(self._session_dir(session_id) / "labels.json")
+
 
     # subject methods
 
